@@ -20,30 +20,30 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-import { VentaService } from './venta.service';
-import { CreateVentaDto } from './dto/create-venta.dto';
-import { UpdateVentaDto } from './dto/update-venta.dto';
+import { TicketService } from './ticket.service';
+import { CreateVentaDto } from './dto/create-ticket.dto';
+import { UpdateVentaDto } from './dto/update-ticket.dto';
 import { Venta as VentaEntity } from './entities/venta.entity';
 
 @ApiTags('Ventas')
 @Controller('venta')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-export class VentaController {
-  constructor(private readonly ventaService: VentaService) {}
+export class TicketController {
+  constructor(private readonly ticketVenta: TicketService) {}
 
   @Post()
   @ApiOperation({ summary: 'Registrar una nueva venta' })
   @ApiBody({ type: CreateVentaDto })
   @ApiResponse({ status: 201, description: 'Venta creada', type: VentaEntity })
   async create(@Body() dto: CreateVentaDto): Promise<VentaEntity> {
-    return this.ventaService.create(dto);
+    return this.ticketVenta.create(dto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar todas las ventas' })
   @ApiResponse({ status: 200, description: 'Listado de ventas', type: [VentaEntity] })
   async findAll(): Promise<VentaEntity[]> {
-    return this.ventaService.findAll();
+    return this.ticketVenta.findAll();
   }
 
   @Get(':id')
@@ -52,7 +52,7 @@ export class VentaController {
   @ApiResponse({ status: 200, description: 'Venta encontrada', type: VentaEntity })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<VentaEntity> {
-    return this.ventaService.findOne(id);
+    return this.ticketVenta.findOne(id);
   }
 
   @Patch(':id')
@@ -65,7 +65,7 @@ export class VentaController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateVentaDto,
   ): Promise<VentaEntity> {
-    return this.ventaService.update(id, dto);
+    return this.ticketVenta.update(id, dto);
   }
 
   @Delete(':id')
@@ -75,6 +75,6 @@ export class VentaController {
   @ApiResponse({ status: 204, description: 'Venta eliminada' })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this.ventaService.remove(id);
+    await this.ticketVenta.remove(id);
   }
 }

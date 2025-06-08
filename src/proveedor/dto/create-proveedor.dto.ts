@@ -3,12 +3,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProveedorDto {
   @ApiProperty({ description: 'Nombre del proveedor', example: 'PepsiCo' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString() @IsNotEmpty()
   nombre: string;
 
   @ApiPropertyOptional({
-    description: 'Información de contacto del proveedor (email, teléfono, etc.)',
+    description: 'Información de contacto (email, teléfono, etc.)',
     example: 'contacto@pepsico.com',
   })
   @IsString()

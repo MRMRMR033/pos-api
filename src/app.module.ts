@@ -9,10 +9,11 @@ import { CategoriaModule } from './categoria/categoria.module';
 import { ProveedorModule } from './proveedor/proveedor.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { AuthModule } from './auth/auth.module';
-import { VentaModule } from './venta/venta.module';
+import { TicketModule } from './ticket/ticket.module';
 import { CashMovementModule } from './cash-movement/cash-movement.module';
 import { SessionEventModule } from './session-event/session-event.module';
 import { ReportModule } from './report/report.module';
+import { TicketItemModule } from './ticket-item/ticket-item.module';
 
 @Module({
   imports: [
@@ -28,8 +29,8 @@ import { ReportModule } from './report/report.module';
     // Módulo de autenticación
     AuthModule,
 
-    // Módulo de tickets (ventas)
-    VentaModule,
+    // Módulo de tickets (ticket)
+    TicketModule,
 
     // Módulos de eventos y finanzas
     CashMovementModule,
@@ -37,6 +38,8 @@ import { ReportModule } from './report/report.module';
 
     // Módulo de reportes
     ReportModule,
+
+    TicketItemModule,
   ],
   controllers: [AppController],
   providers: [AppService],

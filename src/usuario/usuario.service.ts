@@ -19,7 +19,7 @@ export class UsuarioService {
     const hashed = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.usuario.create({
       data: {
-        fullName: dto.name, // Assuming 'fullName' is the correct property in the Prisma schema
+        fullName: dto.fullName, // Assuming 'fullName' is the correct property in the Prisma schema
         email: dto.email,
         password: hashed,
         rol: dto.rol,
