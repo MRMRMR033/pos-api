@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Producto {
+  id             Int       @id @default(autoincrement())
+  codigoBarras   String    @unique
+  nombre         String
+  precioCosto    Decimal   @db.Decimal(10,2)
+  precioVenta    Decimal   @db.Decimal(10,2)
+  precioEspecial Decimal?  @db.Decimal(10,2)
+  stock          Int       @default(0)
+  categoria      Categoria @relation(fields: [categoriaId], references: [id])
+  categoriaId    Int
+  proveedor      Proveedor @relation(fields: [proveedorId], references: [id])
+  proveedorId    Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([nombre], name: "idx_producto_nombre")
+  @@index([categoriaId], name: "idx_producto_categoria")
+  @@index([proveedorId], name: "idx_producto_proveedor")
+  TicketItem TicketItem[]
+}
+
+model Categoria {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  productos Producto[]
+
+  @@index([nombre], name: "idx_categoria_nombre")
+}
+
+model Proveedor {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  contacto  String?
+  productos Producto[]
+
+  @@index([nombre], name: "idx_proveedor_nombre")
+}
+
+model Usuario {
+  id            Int            @id @default(autoincrement())
+  fullName      String
+  email         String?        @unique
+  password      String
+  rol           Rol
+  tickets       Ticket[]       @relation("UsuarioTickets")
+  cashMovements CashMovement[]
+  sessionEvents SessionEvent[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([email], name: "idx_usuario_email")
+}
+
+enum Rol {
+  admin
+  empleado
+}
+
+model Ticket {
+  id           Int           @id @default(autoincrement())
+  usuario      Usuario       @relation("UsuarioTickets", fields: [usuarioId], references: [id])
+  usuarioId    Int
+  numeroTicket Int
+  fecha        DateTime      @default(now())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  items        TicketItem[]
+
+  @@index([usuarioId, fecha], name: "idx_ticket_usuario_fecha")
+  @@unique([usuarioId, fecha, numeroTicket], name: "ticket_por_usuario_y_dia")
+}
+
+model TicketItem {
+  id             Int       @id @default(autoincrement())
+  ticket         Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId       Int
+  producto       Producto  @relation(fields: [productoId], references: [id])
+  productoId     Int
+  cantidad       Int       @default(1)
+  precioUnitario Decimal   @db.Decimal(10,2)
+  total          Decimal   @db.Decimal(12,2)
+
+  @@index([ticketId], name: "idx_ticketitem_ticket")
+  @@index([productoId], name: "idx_ticketitem_producto")
+}
+
+model SessionEvent {
+  id         Int         @id @default(autoincrement())
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
+  usuarioId  Int
+  tipo       EventoTipo
+  timestamp  DateTime    @default(now())
+
+  @@index([usuarioId, timestamp], name: "idx_sessionevent_usuario_timestamp")
+}
+
+enum EventoTipo {
+  LOGIN
+  LOGOUT
+}
+
+model CashMovement {
+  id          Int          @id @default(autoincrement())
+  usuario     Usuario      @relation(fields: [usuarioId], references: [id])
+  usuarioId   Int
+  tipo        MovimientoTipo
+  monto       Decimal      @db.Decimal(10,2)
+  descripcion String?
+  createdAt   DateTime     @default(now())
+
+  @@index([usuarioId, createdAt], name: "idx_cashmovement_usuario_createdat")
+}
+
+enum MovimientoTipo {
+  IN
+  OUT
+}
