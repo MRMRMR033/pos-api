@@ -1,7 +1,7 @@
 import { IsInt, Min, IsOptional, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CreateVentaDto {
+export class CreateTicketDto {
   @ApiProperty({ description: 'ID del usuario que genera la venta', example: 1 })
   @IsInt()
   usuarioId: number;

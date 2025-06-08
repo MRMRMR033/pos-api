@@ -1,5 +1,6 @@
 // src/usuario/usuario.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
@@ -12,32 +13,39 @@ export class UsuarioService {
 
   /**
    * Crea un nuevo usuario con contraseña encriptada.
-   * @param dto Datos para crear el usuario.
-   * @returns Usuario sin la contraseña.
+   * Captura conflicto si el email ya existe.
    */
   async create(dto: CreateUsuarioDto): Promise<Omit<Usuario, 'password'>> {
     const hashed = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.usuario.create({
-      data: {
-        fullName: dto.fullName, // Assuming 'fullName' is the correct property in the Prisma schema
-        email: dto.email,
-        password: hashed,
-        rol: dto.rol,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        rol: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    return user;
+    try {
+      const user = await this.prisma.usuario.create({
+        data: {
+          fullName: dto.fullName,
+          email: dto.email,
+          password: hashed,
+          rol: dto.rol,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          rol: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      return user;
+    } catch (e: any) {
+      // Prisma unique constraint violation code
+      if (e.code === 'P2002' && e.meta?.target?.includes('email')) {
+        throw new ConflictException('El email proporcionado ya está registrado');
+      }
+      throw e;
+    }
   }
 
   /**
-   * Obtiene todos los usuarios (excluyendo contraseñas).
+   * Obtiene todos los usuarios (sin exponer contraseñas).
    */
   async findAll(): Promise<Omit<Usuario, 'password'>[]> {
     return this.prisma.usuario.findMany({
@@ -53,8 +61,8 @@ export class UsuarioService {
   }
 
   /**
-   * Busca un usuario por ID.
-   * @throws NotFoundException si no existe.
+   * Busca un usuario por su ID.
+   * Lanza NotFoundException si no existe.
    */
   async findOne(id: number): Promise<Omit<Usuario, 'password'>> {
     const user = await this.prisma.usuario.findUnique({
@@ -76,34 +84,48 @@ export class UsuarioService {
 
   /**
    * Actualiza un usuario; encripta la contraseña si se provee.
-   * @throws NotFoundException si no existe.
+   * Lanza NotFoundException si no existe y ConflictException si email ya está en uso.
    */
   async update(
     id: number,
     dto: UpdateUsuarioDto,
   ): Promise<Omit<Usuario, 'password'>> {
+    // Verificar existencia
+    await this.findOne(id);
+
+    // Encriptar nueva contraseña si se proporcionó
     if (dto.password) {
       dto.password = await bcrypt.hash(dto.password, 10);
     }
-    await this.findOne(id);
-    const updated = await this.prisma.usuario.update({
-      where: { id },
-      data: { ...dto },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        rol: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    return updated;
+
+    try {
+      const updated = await this.prisma.usuario.update({
+        where: { id },
+        data: { ...dto },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          rol: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      return updated;
+    } catch (e: any) {
+      if (e.code === 'P2002' && e.meta?.target?.includes('email')) {
+        throw new ConflictException('El email proporcionado ya está registrado');
+      }
+      throw e;
+    }
   }
+
+  /**
+   * Elimina un usuario.
+   * Lanza NotFoundException si no existe.
+   */
   async remove(id: number): Promise<void> {
-    await this.findOne(id); // Verifica si el usuario existe
-    await this.prisma.usuario.delete({
-      where: { id },
-    });
-  } 
+    await this.findOne(id);
+    await this.prisma.usuario.delete({ where: { id } });
+  }
 }

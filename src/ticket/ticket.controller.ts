@@ -21,8 +21,8 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { TicketService } from './ticket.service';
-import { CreateVentaDto } from './dto/create-ticket.dto';
-import { UpdateVentaDto } from './dto/update-ticket.dto';
+import { CreateTicketDto } from './dto/create-ticket.dto';
+import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { Venta as VentaEntity } from './entities/venta.entity';
 
 @ApiTags('Ventas')
@@ -33,9 +33,9 @@ export class TicketController {
 
   @Post()
   @ApiOperation({ summary: 'Registrar una nueva venta' })
-  @ApiBody({ type: CreateVentaDto })
+  @ApiBody({ type: CreateTicketDto })
   @ApiResponse({ status: 201, description: 'Venta creada', type: VentaEntity })
-  async create(@Body() dto: CreateVentaDto): Promise<VentaEntity> {
+  async create(@Body() dto: CreateTicketDto): Promise<VentaEntity> {
     return this.ticketVenta.create(dto);
   }
 
@@ -58,12 +58,12 @@ export class TicketController {
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar una venta por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID de la venta' })
-  @ApiBody({ type: UpdateVentaDto })
+  @ApiBody({ type: UpdateTicketDto })
   @ApiResponse({ status: 200, description: 'Venta actualizada', type: VentaEntity })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateVentaDto,
+    @Body() dto: UpdateTicketDto,
   ): Promise<VentaEntity> {
     return this.ticketVenta.update(id, dto);
   }

@@ -1,9 +1,14 @@
 // src/ticket/ticket.service.ts
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateVentaDto } from './dto/create-ticket.dto';
-import { UpdateVentaDto } from './dto/update-ticket.dto';
+import { CreateTicketDto } from './dto/create-ticket.dto';
+import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { Ticket } from '../../generated/prisma';
 
 @Injectable()
@@ -11,19 +16,16 @@ export class TicketService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Registra una nueva ticket. Calcula el número de ticket secuencial diario.
-   * @param dto Datos de la ticket.
-   * @returns La ticket creada.
+   * Registra un nuevo ticket. Calcula el número de ticket secuencial diario.
+   * Captura conflicto si ya existe un ticket con el mismo número en el día.
    */
-  async create(dto: CreateVentaDto): Promise<Ticket> {
-    // Determinar fecha de la ticket (solo día)
+  async create(dto: CreateTicketDto): Promise<Ticket> {
     const date = dto.fecha ? new Date(dto.fecha) : new Date();
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Obtener último ticket del día para este usuario
     const last = await this.prisma.ticket.findFirst({
       where: {
         usuarioId: dto.usuarioId,
@@ -31,21 +33,29 @@ export class TicketService {
       },
       orderBy: { numeroTicket: 'desc' },
     });
-
     const numeroTicket = last ? last.numeroTicket + 1 : 1;
 
-    return this.prisma.ticket.create({
-      data: {
-        usuarioId: dto.usuarioId,
-        numeroTicket,
-        ...(dto.fecha && { fecha: new Date(dto.fecha) }),
-      },
-    });
+    try {
+      return await this.prisma.ticket.create({
+        data: {
+          usuarioId: dto.usuarioId,
+          numeroTicket,
+          ...(dto.fecha && { fecha: new Date(dto.fecha) }),
+        },
+      });
+    } catch (e: any) {
+      // Unique constraint P2002 on composite [usuarioId, fecha, numeroTicket]
+      if (e.code === 'P2002' && e.meta?.target?.includes('ticket_por_usuario_y_dia')) {
+        throw new ConflictException(
+          `Ya existe un ticket #${numeroTicket} para el usuario ${dto.usuarioId} en este día`,
+        );
+      }
+      throw new BadRequestException('No se pudo crear el ticket');
+    }
   }
 
   /**
-   * Obtiene todas las ventas, ordenadas por fecha descendente.
-   * @returns Lista de ventas.
+   * Obtiene todos los tickets, ordenados por fecha descendente.
    */
   async findAll(): Promise<Ticket[]> {
     return this.prisma.ticket.findMany({
@@ -54,42 +64,48 @@ export class TicketService {
   }
 
   /**
-   * Busca una ticket por su ID.
-   * @param id ID de la ticket.
-   * @throws NotFoundException si no existe.
-   * @returns La ticket encontrada.
+   * Busca un ticket por su ID.
+   * Lanza NotFoundException si no existe.
    */
   async findOne(id: number): Promise<Ticket> {
     const ticket = await this.prisma.ticket.findUnique({ where: { id } });
     if (!ticket) {
-      throw new NotFoundException(`Ticket con ID ${id} no encontrada`);
+      throw new NotFoundException(`Ticket con ID ${id} no encontrado`);
     }
     return ticket;
   }
 
   /**
-   * Actualiza los datos de una ticket existente.
-   * @param id ID de la ticket.
-   * @param dto Datos de actualización.
-   * @throws NotFoundException si no existe.
-   * @returns La ticket actualizada.
+   * Actualiza los datos de un ticket existente.
+   * Lanza NotFoundException si no existe y BadRequestException si falla la actualización.
    */
-  async update(id: number, dto: UpdateVentaDto): Promise<Ticket> {
+  async update(id: number, dto: UpdateTicketDto): Promise<Ticket> {
     await this.findOne(id);
-    return this.prisma.ticket.update({
-      where: { id },
-      data: {
-        ...(dto.usuarioId !== undefined && { usuarioId: dto.usuarioId }),
-        ...(dto.numeroTicket !== undefined && { numeroTicket: dto.numeroTicket }),
-        ...(dto.fecha && { fecha: new Date(dto.fecha) }),
-      },
-    });
+
+    const data: any = {
+      ...(dto.usuarioId !== undefined && { usuarioId: dto.usuarioId }),
+      ...(dto.numeroTicket !== undefined && { numeroTicket: dto.numeroTicket }),
+      ...(dto.fecha && { fecha: new Date(dto.fecha) }),
+    };
+
+    try {
+      return await this.prisma.ticket.update({
+        where: { id },
+        data,
+      });
+    } catch (e: any) {
+      if (e.code === 'P2002' && e.meta?.target?.includes('ticket_por_usuario_y_dia')) {
+        throw new ConflictException(
+          `El número de ticket ${dto.numeroTicket} ya está en uso para este usuario en la fecha indicada`,
+        );
+      }
+      throw new BadRequestException('No se pudo actualizar el ticket');
+    }
   }
 
   /**
-   * Elimina una ticket.
-   * @param id ID de la ticket.
-   * @throws NotFoundException si no existe.
+   * Elimina un ticket.
+   * Lanza NotFoundException si no existe.
    */
   async remove(id: number): Promise<void> {
     await this.findOne(id);

@@ -24,7 +24,7 @@ import { UpdateProductoDto } from './dto/update-producto.dto';
 import { ProductoEntity } from './entities/producto.entity';
 import { Producto } from '../../generated/prisma'; // Prisma type
 import { Decimal } from '../../generated/prisma/runtime/library'; // para tipar el decimal
-
+import { ProductoConRelaciones } from './producto.service';
 @ApiTags('Productos')
 @Controller('producto')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))

@@ -17,7 +17,7 @@ model Producto {
   precioEspecial Decimal?  @db.Decimal(10,2)
   stock          Int       @default(0)
   categoria      Categoria @relation(fields: [categoriaId], references: [id])
-  categoriaId    Int
+  categoriaId    Int       @default(1)
   proveedor      Proveedor @relation(fields: [proveedorId], references: [id])
   proveedorId    Int
   createdAt      DateTime  @default(now())
