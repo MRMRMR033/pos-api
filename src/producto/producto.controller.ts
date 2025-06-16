@@ -17,6 +17,13 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiForbiddenResponse,
+  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { ProductoService } from './producto.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
@@ -27,6 +34,8 @@ import { Decimal } from '../../generated/prisma/runtime/library'; // para tipar 
 import { ProductoConRelaciones } from './producto.service';
 import { RequirePermission } from 'src/auth/permissions.decorator';
 import { PERMISSIONS } from 'src/auth/permissions.constants';
+import { ErrorResponseDto } from 'src/common/dto/api-response.dto';
+
 @ApiTags('Productos')
 @Controller('producto')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
@@ -54,9 +63,87 @@ export class ProductoController {
 
   @RequirePermission(PERMISSIONS.PRODUCTOS_CREAR)
   @Post()
-  @ApiOperation({ summary: 'Crear un nuevo producto' })
-  @ApiBody({ type: CreateProductoDto })
-  @ApiResponse({ status: 201, description: 'Producto creado con éxito', type: ProductoEntity })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ 
+    summary: 'Crear un nuevo producto',
+    description: `
+      Crea un nuevo producto en el inventario del sistema POS.
+      
+      **Permiso requerido:** productos:crear
+      
+      **Campos requeridos:**
+      - Código de barras (único)
+      - Nombre del producto
+      - Precio de costo
+      - Precio de venta
+      - Categoría (ID)
+    `
+  })
+  @ApiBody({ 
+    type: CreateProductoDto,
+    examples: {
+      basico: {
+        summary: 'Producto básico',
+        value: {
+          codigoBarras: '7894900011517',
+          nombre: 'Coca Cola 350ml',
+          precioCosto: 1.50,
+          precioVenta: 2.50,
+          categoriaId: 1,
+          proveedorId: 1,
+          stock: 100
+        }
+      },
+      sinProveedor: {
+        summary: 'Producto sin proveedor',
+        value: {
+          codigoBarras: '7894900011518',
+          nombre: 'Agua Mineral 500ml',
+          precioCosto: 0.80,
+          precioVenta: 1.20,
+          categoriaId: 1,
+          stock: 50
+        }
+      }
+    }
+  })
+  @ApiCreatedResponse({ 
+    description: 'Producto creado exitosamente', 
+    type: ProductoEntity,
+    example: {
+      id: 15,
+      codigoBarras: '7894900011517',
+      nombre: 'Coca Cola 350ml',
+      precioCosto: 1.50,
+      precioVenta: 2.50,
+      precioEspecial: null,
+      stock: 100,
+      categoriaId: 1,
+      proveedorId: 1,
+      categoria: { id: 1, nombre: 'Bebidas' },
+      proveedor: { id: 1, nombre: 'Distribuidora ABC' },
+      createdAt: '2025-06-16T10:30:00.000Z',
+      updatedAt: '2025-06-16T10:30:00.000Z'
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos o código de barras duplicado',
+    type: ErrorResponseDto,
+    example: {
+      statusCode: 400,
+      message: ['El código de barras ya existe', 'El precio de venta debe ser mayor a cero'],
+      error: 'Bad Request'
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
+  @ApiForbiddenResponse({ 
+    description: 'Sin permisos para crear productos', 
+    type: ErrorResponseDto,
+    example: {
+      statusCode: 403,
+      message: 'No tienes permisos suficientes. Permisos requeridos (al menos uno): productos:crear'
+    }
+  })
   async create(@Body() dto: CreateProductoDto): Promise<ProductoEntity> {
     const creado = await this.productoService.create(dto);
     return this.mapProducto(creado);

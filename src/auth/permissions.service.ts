@@ -122,6 +122,22 @@ export class PermissionsService {
     });
   }
 
+  async getAllPermissions() {
+    return await this.prisma.permission.findMany({
+      select: {
+        id: true,
+        key: true,
+        name: true,
+        description: true,
+        module: true,
+      },
+      orderBy: [
+        { module: 'asc' },
+        { name: 'asc' }
+      ],
+    });
+  }
+
   async grantPermission(userId: number, permissionKey: string, grantedById?: number) {
     const permission = await this.prisma.permission.findUnique({
       where: { key: permissionKey },

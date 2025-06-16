@@ -9,41 +9,41 @@ datasource db {
 }
 
 model StockMovement {
-  id          Int       @id @default(autoincrement())
-  producto    Producto  @relation(fields: [productoId], references: [id])
-  productoId  Int
-  tipo        MovimientoTipo  // IN, OUT, ADJUST
-  cantidad    Int
-  motivo      String?         // “Compra”, “Venta #123”, “Ajuste: conteo físico”
-  usuario     Usuario         @relation(fields: [usuarioId], references: [id])
-  usuarioId   Int
-  createdAt   DateTime  @default(now())
-  @@index([productoId, createdAt], name: "idx_stockmovement_producto_fecha")
+  id         Int            @id @default(autoincrement())
+  productoId Int
+  tipo       MovimientoTipo
+  cantidad   Int
+  motivo     String?
+  usuarioId  Int
+  createdAt  DateTime       @default(now())
+  producto   Producto       @relation(fields: [productoId], references: [id])
+  usuario    Usuario        @relation(fields: [usuarioId], references: [id])
+
+  @@index([productoId, createdAt], map: "idx_stockmovement_producto_fecha")
 }
 
-
 model Producto {
-  id             Int       @id @default(autoincrement())
-  codigoBarras   String    @unique
+  id             Int             @id @default(autoincrement())
+  codigoBarras   String          @unique
   nombre         String
-  precioCosto    Decimal   @db.Decimal(10,2)
-  precioVenta    Decimal   @db.Decimal(10,2)
-  precioEspecial Decimal?  @db.Decimal(10,2)
-  stock          Int       @default(0)
-  categoria      Categoria @relation(fields: [categoriaId], references: [id])
-  categoriaId    Int       @default(1)
-  proveedor      Proveedor? @relation(fields: [proveedorId], references: [id])
+  precioCosto    Decimal         @db.Decimal(10, 2)
+  precioVenta    Decimal         @db.Decimal(10, 2)
+  precioEspecial Decimal?        @db.Decimal(10, 2)
+  stock          Int             @default(0)
+  categoriaId    Int             @default(1)
   proveedorId    Int?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  updatedBy      Usuario?  @relation(fields: [updatedById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   updatedById    Int?
+  categoria      Categoria       @relation(fields: [categoriaId], references: [id])
+  proveedor      Proveedor?      @relation(fields: [proveedorId], references: [id])
+  updatedBy      Usuario?        @relation(fields: [updatedById], references: [id])
+  StockMovement  StockMovement[]
+  TicketItem     TicketItem[]
 
-  @@index([nombre], name: "idx_producto_nombre")
-  @@index([categoriaId], name: "idx_producto_categoria")
-  @@index([proveedorId], name: "idx_producto_proveedor")
-  TicketItem TicketItem[]
-  StockMovement StockMovement[]
+  @@index([nombre], map: "idx_producto_nombre")
+  @@index([categoriaId], map: "idx_producto_categoria")
+  @@index([proveedorId], map: "idx_producto_proveedor")
 }
 
 model Categoria {
@@ -51,7 +51,7 @@ model Categoria {
   nombre    String     @unique
   productos Producto[]
 
-  @@index([nombre], name: "idx_categoria_nombre")
+  @@index([nombre], map: "idx_categoria_nombre")
 }
 
 model Proveedor {
@@ -60,26 +60,105 @@ model Proveedor {
   contacto  String?
   productos Producto[]
 
-  @@index([nombre], name: "idx_proveedor_nombre")
+  @@index([nombre], map: "idx_proveedor_nombre")
 }
 
 model Usuario {
-  id            Int            @id @default(autoincrement())
-  fullName      String
-  email         String?        @unique
-  password      String
-  rol           Rol
-  tickets       Ticket[]       @relation("UsuarioTickets")
-  cashMovements CashMovement[]
-  sessionEvents SessionEvent[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  @@index([email], name: "idx_usuario_email")
-  productos      Producto[]
-  StockMovement StockMovement[]
-  userPermissions UserPermission[]
+  id                 Int              @id @default(autoincrement())
+  email              String?          @unique
+  password           String
+  rol                Rol
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  fullName           String
+  cashMovements      CashMovement[]
+  productos          Producto[]
+  sessionEvents      SessionEvent[]
+  StockMovement      StockMovement[]
+  tickets            Ticket[]         @relation("UsuarioTickets")
   grantedPermissions UserPermission[] @relation("GrantedPermissions")
+  userPermissions    UserPermission[]
+
+  @@index([email], map: "idx_usuario_email")
+}
+
+model Ticket {
+  id           Int          @id @default(autoincrement())
+  usuarioId    Int
+  numeroTicket Int
+  fecha        DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  usuario      Usuario      @relation("UsuarioTickets", fields: [usuarioId], references: [id])
+  items        TicketItem[]
+
+  @@unique([usuarioId, fecha, numeroTicket], name: "ticket_por_usuario_y_dia")
+  @@index([usuarioId, fecha], map: "idx_ticket_usuario_fecha")
+}
+
+model TicketItem {
+  id             Int      @id @default(autoincrement())
+  ticketId       Int
+  productoId     Int
+  cantidad       Int      @default(1)
+  precioUnitario Decimal  @db.Decimal(10, 2)
+  total          Decimal  @db.Decimal(12, 2)
+  producto       Producto @relation(fields: [productoId], references: [id])
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId], map: "idx_ticketitem_ticket")
+  @@index([productoId], map: "idx_ticketitem_producto")
+}
+
+model SessionEvent {
+  id        Int        @id @default(autoincrement())
+  usuarioId Int
+  tipo      EventoTipo
+  timestamp DateTime   @default(now())
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, timestamp], map: "idx_sessionevent_usuario_timestamp")
+}
+
+model CashMovement {
+  id          Int            @id @default(autoincrement())
+  usuarioId   Int
+  tipo        MovimientoTipo
+  monto       Decimal        @db.Decimal(10, 2)
+  descripcion String?
+  createdAt   DateTime       @default(now())
+  usuario     Usuario        @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, createdAt], map: "idx_cashmovement_usuario_createdat")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement())
+  key             String           @unique
+  name            String
+  description     String?
+  module          String
+  createdAt       DateTime         @default(now())
+  userPermissions UserPermission[]
+
+  @@index([module], map: "idx_permission_module")
+  @@index([key], map: "idx_permission_key")
+}
+
+model UserPermission {
+  id           Int        @id @default(autoincrement())
+  usuarioId    Int
+  permissionId Int
+  granted      Boolean    @default(true)
+  grantedAt    DateTime   @default(now())
+  grantedById  Int?
+  grantedBy    Usuario?   @relation("GrantedPermissions", fields: [grantedById], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, permissionId])
+  @@index([usuarioId], map: "idx_userpermission_usuario")
+  @@index([permissionId], map: "idx_userpermission_permission")
 }
 
 enum Rol {
@@ -87,92 +166,12 @@ enum Rol {
   empleado
 }
 
-model Ticket {
-  id           Int           @id @default(autoincrement())
-  usuario      Usuario       @relation("UsuarioTickets", fields: [usuarioId], references: [id])
-  usuarioId    Int
-  numeroTicket Int
-  fecha        DateTime      @default(now())
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  items        TicketItem[]
-
-  @@index([usuarioId, fecha], name: "idx_ticket_usuario_fecha")
-  @@unique([usuarioId, fecha, numeroTicket], name: "ticket_por_usuario_y_dia")
-}
-
-model TicketItem {
-  id             Int       @id @default(autoincrement())
-  ticket         Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  ticketId       Int
-  producto       Producto  @relation(fields: [productoId], references: [id])
-  productoId     Int
-  cantidad       Int       @default(1)
-  precioUnitario Decimal   @db.Decimal(10,2)
-  total          Decimal   @db.Decimal(12,2)
-
-  @@index([ticketId], name: "idx_ticketitem_ticket")
-  @@index([productoId], name: "idx_ticketitem_producto")
-}
-
-model SessionEvent {
-  id         Int         @id @default(autoincrement())
-  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
-  usuarioId  Int
-  tipo       EventoTipo
-  timestamp  DateTime    @default(now())
-
-  @@index([usuarioId, timestamp], name: "idx_sessionevent_usuario_timestamp")
-}
-
 enum EventoTipo {
   LOGIN
   LOGOUT
 }
 
-model CashMovement {
-  id          Int          @id @default(autoincrement())
-  usuario     Usuario      @relation(fields: [usuarioId], references: [id])
-  usuarioId   Int
-  tipo        MovimientoTipo
-  monto       Decimal      @db.Decimal(10,2)
-  descripcion String?
-  createdAt   DateTime     @default(now())
-
-  @@index([usuarioId, createdAt], name: "idx_cashmovement_usuario_createdat")
-}
-
 enum MovimientoTipo {
   IN
   OUT
-}
-
-model Permission {
-  id              Int     @id @default(autoincrement())
-  key             String  @unique // ej: "productos:ver_precio_costo"
-  name            String  // ej: "Ver precio de costo de productos"
-  description     String?
-  module          String  // ej: "productos", "ventas", "caja"
-  createdAt       DateTime @default(now())
-  
-  userPermissions UserPermission[]
-  
-  @@index([module], name: "idx_permission_module")
-  @@index([key], name: "idx_permission_key")
-}
-
-model UserPermission {
-  id           Int        @id @default(autoincrement())
-  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  usuarioId    Int
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  permissionId Int
-  granted      Boolean    @default(true)
-  grantedAt    DateTime   @default(now())
-  grantedBy    Usuario?   @relation("GrantedPermissions", fields: [grantedById], references: [id])
-  grantedById  Int?
-  
-  @@unique([usuarioId, permissionId])
-  @@index([usuarioId], name: "idx_userpermission_usuario")
-  @@index([permissionId], name: "idx_userpermission_permission")
 }

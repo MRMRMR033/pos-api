@@ -27,15 +27,16 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Usuario no autenticado');
     }
 
-    // Verificar si el usuario tiene todos los permisos requeridos
-    const hasPermission = await this.permissionsService.hasAllPermissions(
-      user.sub,
+    // Verificar si el usuario tiene AL MENOS UNO de los permisos requeridos (OR logic)
+    // FIXED: Usar user.id en lugar de user.sub
+    const hasPermission = await this.permissionsService.hasAnyPermission(
+      user.id,
       requiredPermissions,
     );
 
     if (!hasPermission) {
       throw new ForbiddenException(
-        `No tienes permisos suficientes. Permisos requeridos: ${requiredPermissions.join(', ')}`,
+        `No tienes permisos suficientes. Permisos requeridos (al menos uno): ${requiredPermissions.join(', ')}`,
       );
     }
 
