@@ -43,7 +43,8 @@ import { Public } from './public.decorator';
       schema: { example: { access_token: 'eyJ...' } },
     })
     async login(@Body() dto: LoginDto) {
-      return this.auth.login(dto);
+      console.log('Login attempt with:', dto);
+      return await this.auth.login(dto);
     }
   
     @Get('perfil')

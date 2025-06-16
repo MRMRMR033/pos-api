@@ -22,6 +22,8 @@ import { SessionEventService } from './session-event.service';
 import { CreateSessionEventDto } from './dto/create-session-event.dto';
 import { UpdateSessionEventDto } from './dto/update-session-event.dto';
 import { SessionEvent } from './entities/session-event.entity';
+import { RequirePermission } from 'src/auth/permissions.decorator';
+import { PERMISSIONS } from 'src/auth/permissions.constants';
 
 @ApiTags('Session Events')
 @Controller('session-event')
@@ -29,6 +31,7 @@ import { SessionEvent } from './entities/session-event.entity';
 export class SessionEventController {
   constructor(private readonly service: SessionEventService) {}
 
+  @RequirePermission(PERMISSIONS.SESIONES_VER_PROPIAS)
   @Post()
   @ApiOperation({ summary: 'Registrar evento de sesión (login/logout)' })
   @ApiBody({ type: CreateSessionEventDto })
@@ -37,6 +40,7 @@ export class SessionEventController {
     return this.service.create(dto);
   }
 
+  @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS, PERMISSIONS.SESIONES_VER_PROPIAS)
   @Get()
   @ApiOperation({ summary: 'Obtener todos los eventos de sesión' })
   @ApiResponse({ status: 200, type: [SessionEvent] })
@@ -44,6 +48,7 @@ export class SessionEventController {
     return this.service.findAll();
   }
 
+  @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS, PERMISSIONS.SESIONES_VER_PROPIAS)
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un evento por ID' })
   @ApiParam({ name: 'id', type: Number })
@@ -55,6 +60,7 @@ export class SessionEventController {
     return this.service.findOne(id);
   }
 
+  @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS)
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar un evento de sesión' })
   @ApiParam({ name: 'id', type: Number })
@@ -68,6 +74,7 @@ export class SessionEventController {
     return this.service.update(id, dto);
   }
 
+  @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Eliminar un evento de sesión' })

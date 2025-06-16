@@ -23,6 +23,8 @@ import { CreateProveedorDto } from './dto/create-proveedor.dto';
 import { UpdateProveedorDto } from './dto/update-proveedor.dto';
 // Entidad para Swagger (documentación)
 import { ProveedorEntity } from './entities/proveedor.entity';
+import { RequirePermission } from 'src/auth/permissions.decorator';
+import { PERMISSIONS } from 'src/auth/permissions.constants';
 
 @ApiTags('Proveedores')
 @Controller('proveedor')
@@ -30,6 +32,7 @@ import { ProveedorEntity } from './entities/proveedor.entity';
 export class ProveedorController {
   constructor(private readonly proveedorService: ProveedorService) {}
 
+  @RequirePermission(PERMISSIONS.PROVEEDORES_CREAR)
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo proveedor' })
   @ApiBody({ type: CreateProveedorDto })
@@ -40,6 +43,7 @@ export class ProveedorController {
     return this.proveedorService.create(dto);
   }
 
+  @RequirePermission(PERMISSIONS.PROVEEDORES_VER)
   @Get()
   @ApiOperation({ summary: 'Listar todos los proveedores' })
   @ApiResponse({
@@ -51,6 +55,7 @@ export class ProveedorController {
     return this.proveedorService.findAll();
   }
 
+  @RequirePermission(PERMISSIONS.PROVEEDORES_VER)
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un proveedor por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del proveedor' })
@@ -62,6 +67,7 @@ export class ProveedorController {
     return this.proveedorService.findOne(id);
   }
 
+  @RequirePermission(PERMISSIONS.PROVEEDORES_EDITAR)
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar un proveedor por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del proveedor' })
@@ -75,6 +81,7 @@ export class ProveedorController {
     return this.proveedorService.update(id, dto);
   }
 
+  @RequirePermission(PERMISSIONS.PROVEEDORES_ELIMINAR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Eliminar un proveedor por ID' })

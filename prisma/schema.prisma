@@ -8,6 +8,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model StockMovement {
+  id          Int       @id @default(autoincrement())
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  productoId  Int
+  tipo        MovimientoTipo  // IN, OUT, ADJUST
+  cantidad    Int
+  motivo      String?         // “Compra”, “Venta #123”, “Ajuste: conteo físico”
+  usuario     Usuario         @relation(fields: [usuarioId], references: [id])
+  usuarioId   Int
+  createdAt   DateTime  @default(now())
+  @@index([productoId, createdAt], name: "idx_stockmovement_producto_fecha")
+}
+
+
 model Producto {
   id             Int       @id @default(autoincrement())
   codigoBarras   String    @unique
@@ -18,15 +32,18 @@ model Producto {
   stock          Int       @default(0)
   categoria      Categoria @relation(fields: [categoriaId], references: [id])
   categoriaId    Int       @default(1)
-  proveedor      Proveedor @relation(fields: [proveedorId], references: [id])
-  proveedorId    Int
+  proveedor      Proveedor? @relation(fields: [proveedorId], references: [id])
+  proveedorId    Int?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  updatedBy      Usuario?  @relation(fields: [updatedById], references: [id])
+  updatedById    Int?
 
   @@index([nombre], name: "idx_producto_nombre")
   @@index([categoriaId], name: "idx_producto_categoria")
   @@index([proveedorId], name: "idx_producto_proveedor")
   TicketItem TicketItem[]
+  StockMovement StockMovement[]
 }
 
 model Categoria {
@@ -59,6 +76,10 @@ model Usuario {
   updatedAt     DateTime       @updatedAt
 
   @@index([email], name: "idx_usuario_email")
+  productos      Producto[]
+  StockMovement StockMovement[]
+  userPermissions UserPermission[]
+  grantedPermissions UserPermission[] @relation("GrantedPermissions")
 }
 
 enum Rol {
@@ -124,4 +145,34 @@ model CashMovement {
 enum MovimientoTipo {
   IN
   OUT
+}
+
+model Permission {
+  id              Int     @id @default(autoincrement())
+  key             String  @unique // ej: "productos:ver_precio_costo"
+  name            String  // ej: "Ver precio de costo de productos"
+  description     String?
+  module          String  // ej: "productos", "ventas", "caja"
+  createdAt       DateTime @default(now())
+  
+  userPermissions UserPermission[]
+  
+  @@index([module], name: "idx_permission_module")
+  @@index([key], name: "idx_permission_key")
+}
+
+model UserPermission {
+  id           Int        @id @default(autoincrement())
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId    Int
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId Int
+  granted      Boolean    @default(true)
+  grantedAt    DateTime   @default(now())
+  grantedBy    Usuario?   @relation("GrantedPermissions", fields: [grantedById], references: [id])
+  grantedById  Int?
+  
+  @@unique([usuarioId, permissionId])
+  @@index([usuarioId], name: "idx_userpermission_usuario")
+  @@index([permissionId], name: "idx_userpermission_permission")
 }

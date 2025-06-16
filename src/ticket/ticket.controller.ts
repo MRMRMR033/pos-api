@@ -24,6 +24,8 @@ import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { Venta as VentaEntity } from './entities/venta.entity';
+import { RequirePermission } from 'src/auth/permissions.decorator';
+import { PERMISSIONS } from 'src/auth/permissions.constants';
 
 @ApiTags('Ventas')
 @Controller('venta')
@@ -31,6 +33,7 @@ import { Venta as VentaEntity } from './entities/venta.entity';
 export class TicketController {
   constructor(private readonly ticketVenta: TicketService) {}
 
+  @RequirePermission(PERMISSIONS.VENTAS_CREAR)
   @Post()
   @ApiOperation({ summary: 'Registrar una nueva venta' })
   @ApiBody({ type: CreateTicketDto })
@@ -39,6 +42,7 @@ export class TicketController {
     return this.ticketVenta.create(dto);
   }
 
+  @RequirePermission(PERMISSIONS.VENTAS_VER_TODAS, PERMISSIONS.VENTAS_VER_PROPIAS)
   @Get()
   @ApiOperation({ summary: 'Listar todas las ventas' })
   @ApiResponse({ status: 200, description: 'Listado de ventas', type: [VentaEntity] })
@@ -46,6 +50,7 @@ export class TicketController {
     return this.ticketVenta.findAll();
   }
 
+  @RequirePermission(PERMISSIONS.VENTAS_VER_TODAS, PERMISSIONS.VENTAS_VER_PROPIAS)
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una venta por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID de la venta' })
@@ -55,6 +60,7 @@ export class TicketController {
     return this.ticketVenta.findOne(id);
   }
 
+  @RequirePermission(PERMISSIONS.VENTAS_EDITAR)
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar una venta por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID de la venta' })
@@ -68,6 +74,7 @@ export class TicketController {
     return this.ticketVenta.update(id, dto);
   }
 
+  @RequirePermission(PERMISSIONS.VENTAS_ELIMINAR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Eliminar una venta por ID' })

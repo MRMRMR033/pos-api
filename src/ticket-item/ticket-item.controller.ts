@@ -26,6 +26,8 @@ import {
   import { TicketItemEntity } from './entity/ticket-item.entity';
   import { TicketItem } from '../../generated/prisma';
   import { Decimal } from '../../generated/prisma/runtime/library';
+  import { RequirePermission } from 'src/auth/permissions.decorator';
+  import { PERMISSIONS } from 'src/auth/permissions.constants';
   
   @ApiTags('Ticket Items')
   @Controller('ticket-item')
@@ -45,6 +47,7 @@ import {
       };
     }
   
+    @RequirePermission(PERMISSIONS.VENTAS_CREAR)
     @Post()
     @ApiOperation({ summary: 'Crear un ítem de ticket' })
     @ApiBody({ type: CreateTicketItemDto })
@@ -54,6 +57,7 @@ import {
       return this.mapItem(created);
     }
   
+    @RequirePermission(PERMISSIONS.VENTAS_VER_TODAS, PERMISSIONS.VENTAS_VER_PROPIAS)
     @Get()
     @ApiOperation({ summary: 'Listar todos los ítems de ticket' })
     @ApiResponse({ status: 200, type: [TicketItemEntity] })
@@ -62,6 +66,7 @@ import {
       return items.map(i => this.mapItem(i));
     }
   
+    @RequirePermission(PERMISSIONS.VENTAS_VER_TODAS, PERMISSIONS.VENTAS_VER_PROPIAS)
     @Get(':id')
     @ApiOperation({ summary: 'Obtener un ítem de ticket por ID' })
     @ApiParam({ name: 'id', type: Number })
@@ -74,6 +79,7 @@ import {
       return this.mapItem(item);
     }
   
+    @RequirePermission(PERMISSIONS.VENTAS_EDITAR)
     @Patch(':id')
     @ApiOperation({ summary: 'Actualizar un ítem de ticket' })
     @ApiParam({ name: 'id', type: Number })
@@ -88,6 +94,7 @@ import {
       return this.mapItem(updated);
     }
   
+    @RequirePermission(PERMISSIONS.VENTAS_ELIMINAR)
     @Delete(':id')
     @HttpCode(204)
     @ApiOperation({ summary: 'Eliminar un ítem de ticket' })

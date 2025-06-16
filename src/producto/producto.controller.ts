@@ -25,6 +25,8 @@ import { ProductoEntity } from './entities/producto.entity';
 import { Producto } from '../../generated/prisma'; // Prisma type
 import { Decimal } from '../../generated/prisma/runtime/library'; // para tipar el decimal
 import { ProductoConRelaciones } from './producto.service';
+import { RequirePermission } from 'src/auth/permissions.decorator';
+import { PERMISSIONS } from 'src/auth/permissions.constants';
 @ApiTags('Productos')
 @Controller('producto')
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
@@ -50,6 +52,7 @@ export class ProductoController {
     };
   }
 
+  @RequirePermission(PERMISSIONS.PRODUCTOS_CREAR)
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo producto' })
   @ApiBody({ type: CreateProductoDto })
@@ -59,6 +62,7 @@ export class ProductoController {
     return this.mapProducto(creado);
   }
 
+  @RequirePermission(PERMISSIONS.PRODUCTOS_VER)
   @Get()
   @ApiOperation({ summary: 'Obtener todos los productos' })
   @ApiResponse({ status: 200, description: 'Listado de productos', type: [ProductoEntity] })
@@ -67,6 +71,7 @@ export class ProductoController {
     return list.map(p => this.mapProducto(p));
   }
 
+  @RequirePermission(PERMISSIONS.PRODUCTOS_VER)
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un producto por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del producto' })
@@ -77,6 +82,7 @@ export class ProductoController {
     return this.mapProducto(p);
   }
 
+  @RequirePermission(PERMISSIONS.PRODUCTOS_EDITAR)
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar un producto por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del producto' })
@@ -91,6 +97,7 @@ export class ProductoController {
     return this.mapProducto(updated);
   }
 
+  @RequirePermission(PERMISSIONS.PRODUCTOS_ELIMINAR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Eliminar un producto por ID' })

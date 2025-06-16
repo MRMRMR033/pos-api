@@ -14,6 +14,7 @@ import { CashMovementModule } from './cash-movement/cash-movement.module';
 import { SessionEventModule } from './session-event/session-event.module';
 import { ReportModule } from './report/report.module';
 import { TicketItemModule } from './ticket-item/ticket-item.module';
+import { InitializationModule } from './common/initialization.module';
 
 @Module({
   imports: [
@@ -40,6 +41,9 @@ import { TicketItemModule } from './ticket-item/ticket-item.module';
     ReportModule,
 
     TicketItemModule,
+
+    // Módulo de inicialización
+    InitializationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -23,6 +23,9 @@ import { UsuarioService } from './usuario.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { Usuario as UsuarioEntity } from './entities/usuario.entity';
+import { Public } from 'src/auth/public.decorator';
+import { RequirePermission } from 'src/auth/permissions.decorator';
+import { PERMISSIONS } from 'src/auth/permissions.constants';
 
 @ApiTags('Usuarios')
 @Controller('usuario')
@@ -30,6 +33,7 @@ import { Usuario as UsuarioEntity } from './entities/usuario.entity';
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
 
+  @RequirePermission(PERMISSIONS.USUARIOS_CREAR)
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo usuario' })
   @ApiBody({ type: CreateUsuarioDto })
@@ -40,6 +44,7 @@ export class UsuarioController {
     return this.usuarioService.create(dto);
   }
 
+  @RequirePermission(PERMISSIONS.USUARIOS_VER_TODOS)
   @Get()
   @ApiOperation({ summary: 'Listar todos los usuarios' })
   @ApiResponse({
@@ -51,6 +56,7 @@ export class UsuarioController {
     return this.usuarioService.findAll();
   }
 
+  @RequirePermission(PERMISSIONS.USUARIOS_VER_TODOS, PERMISSIONS.USUARIOS_VER_PROPIO)
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un usuario por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del usuario' })
@@ -62,6 +68,7 @@ export class UsuarioController {
     return this.usuarioService.findOne(id);
   }
 
+  @RequirePermission(PERMISSIONS.USUARIOS_EDITAR)
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar un usuario por ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del usuario' })
@@ -75,6 +82,7 @@ export class UsuarioController {
     return this.usuarioService.update(id, dto);
   }
 
+  @RequirePermission(PERMISSIONS.USUARIOS_ELIMINAR)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Eliminar un usuario por ID' })
