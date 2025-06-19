@@ -1,27 +1,37 @@
 import { Type } from 'class-transformer';
-import { IsInt, Min, IsNumber } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, Min, IsNumber, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTicketItemDto {
-  @ApiProperty({ description: 'ID del ticket', example: 1 })
+  @ApiPropertyOptional({ description: 'ID del ticket (se asigna automáticamente)', example: 1 })
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
-  ticketId: number;
+  ticketId?: number;
 
   @ApiProperty({ description: 'ID del producto', example: 10 })
   @Type(() => Number)
   @IsInt()
   productoId: number;
 
-  @ApiProperty({ description: 'Cantidad vendida', example: 2 })
+  @ApiPropertyOptional({ description: 'Cantidad vendida (default: 1)', example: 2 })
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  cantidad: number;
+  cantidad?: number;
 
-  @ApiProperty({ description: 'Precio unitario al momento de la venta', example: 15.0 })
+  @ApiPropertyOptional({ description: 'Precio unitario al momento de la venta (se toma del producto si no se especifica)', example: 15.0 })
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  precioUnitario: number;
+  precioUnitario?: number;
+
+  @ApiPropertyOptional({ description: 'Descuento aplicado al item', example: 5.0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  descuento?: number;
 }

@@ -22,24 +22,98 @@ model StockMovement {
   @@index([productoId, createdAt], map: "idx_stockmovement_producto_fecha")
 }
 
+
+model OrdenCompra {
+  id            Int                   @id @default(autoincrement())
+  numeroOrden   String                @unique
+  proveedorId   Int
+  usuarioId     Int
+  estado        EstadoOrden           @default(PENDIENTE)
+  fechaOrden    DateTime              @default(now())
+  fechaEntrega  DateTime?
+  subtotal      Decimal               @default(0) @db.Decimal(12, 2)
+  impuestos     Decimal               @default(0) @db.Decimal(12, 2)
+  total         Decimal               @default(0) @db.Decimal(12, 2)
+  observaciones String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  proveedor     Proveedor             @relation(fields: [proveedorId], references: [id])
+  usuario       Usuario               @relation(fields: [usuarioId], references: [id])
+  detalles      DetalleOrdenCompra[]
+
+  @@index([proveedorId], map: "idx_ordencompra_proveedor")
+  @@index([usuarioId], map: "idx_ordencompra_usuario")
+  @@index([estado], map: "idx_ordencompra_estado")
+}
+
+model DetalleOrdenCompra {
+  id             Int         @id @default(autoincrement())
+  ordenCompraId  Int
+  productoId     Int
+  cantidad       Int
+  precioUnitario Decimal     @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(12, 2)
+  ordenCompra    OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+  producto       Producto    @relation(fields: [productoId], references: [id])
+
+  @@index([ordenCompraId], map: "idx_detalleordencompra_orden")
+  @@index([productoId], map: "idx_detalleordencompra_producto")
+}
+
+model TurnoCaja {
+  id             Int          @id @default(autoincrement())
+  usuarioId      Int
+  cajaId         Int          @default(1)
+  fechaApertura  DateTime     @default(now())
+  fechaCierre    DateTime?
+  saldoInicial   Decimal      @db.Decimal(10, 2)
+  saldoFinal     Decimal?     @db.Decimal(10, 2)
+  totalIngresos  Decimal      @default(0) @db.Decimal(10, 2)
+  totalEgresos   Decimal      @default(0) @db.Decimal(10, 2)
+  diferencia     Decimal      @default(0) @db.Decimal(10, 2)
+  observaciones  String?
+  estado         EstadoTurno  @default(ABIERTO)
+  usuario        Usuario      @relation(fields: [usuarioId], references: [id])
+  tickets        Ticket[]
+
+  @@index([usuarioId], map: "idx_turnocaja_usuario")
+  @@index([fechaApertura], map: "idx_turnocaja_fecha")
+  @@index([estado], map: "idx_turnocaja_estado")
+}
+
+model ConfiguracionImpuesto {
+  id                 Int        @id @default(autoincrement())
+  nombre             String
+  porcentaje         Decimal    @db.Decimal(5, 2)
+  aplicadoPorDefecto Boolean    @default(false)
+  activo             Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  productos          Producto[]
+}
+
 model Producto {
-  id             Int             @id @default(autoincrement())
-  codigoBarras   String          @unique
-  nombre         String
-  precioCosto    Decimal         @db.Decimal(10, 2)
-  precioVenta    Decimal         @db.Decimal(10, 2)
-  precioEspecial Decimal?        @db.Decimal(10, 2)
-  stock          Int             @default(0)
-  categoriaId    Int             @default(1)
-  proveedorId    Int?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  updatedById    Int?
-  categoria      Categoria       @relation(fields: [categoriaId], references: [id])
-  proveedor      Proveedor?      @relation(fields: [proveedorId], references: [id])
-  updatedBy      Usuario?        @relation(fields: [updatedById], references: [id])
-  StockMovement  StockMovement[]
-  TicketItem     TicketItem[]
+  id                 Int                   @id @default(autoincrement())
+  codigoBarras       String                @unique
+  nombre             String
+  precioCosto        Decimal               @db.Decimal(10, 2)
+  precioVenta        Decimal               @db.Decimal(10, 2)
+  precioEspecial     Decimal?              @db.Decimal(10, 2)
+  stock              Int                   @default(0)
+  stockMinimo        Int                   @default(0)
+  categoriaId        Int                   @default(1)
+  proveedorId        Int?
+  impuestoId         Int?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  updatedById        Int?
+  categoria          Categoria             @relation(fields: [categoriaId], references: [id])
+  proveedor          Proveedor?            @relation(fields: [proveedorId], references: [id])
+  updatedBy          Usuario?              @relation(fields: [updatedById], references: [id])
+  impuesto           ConfiguracionImpuesto? @relation(fields: [impuestoId], references: [id])
+  StockMovement      StockMovement[]
+  TicketItem         TicketItem[]
+  DetalleOrdenCompra DetalleOrdenCompra[]
 
   @@index([nombre], map: "idx_producto_nombre")
   @@index([categoriaId], map: "idx_producto_categoria")
@@ -55,10 +129,16 @@ model Categoria {
 }
 
 model Proveedor {
-  id        Int        @id @default(autoincrement())
-  nombre    String     @unique
-  contacto  String?
-  productos Producto[]
+  id               Int           @id @default(autoincrement())
+  nombre           String        @unique
+  contacto         String?
+  email            String?
+  telefono         String?
+  direccion        String?
+  condicionesPago  String?
+  descuentoPromedio Decimal      @default(0) @db.Decimal(5, 2)
+  productos        Producto[]
+  ordenesCompra    OrdenCompra[]
 
   @@index([nombre], map: "idx_proveedor_nombre")
 }
@@ -78,22 +158,32 @@ model Usuario {
   tickets            Ticket[]         @relation("UsuarioTickets")
   grantedPermissions UserPermission[] @relation("GrantedPermissions")
   userPermissions    UserPermission[]
+  ordenesCompra      OrdenCompra[]
+  turnosCaja         TurnoCaja[]
 
   @@index([email], map: "idx_usuario_email")
 }
 
 model Ticket {
-  id           Int          @id @default(autoincrement())
-  usuarioId    Int
-  numeroTicket Int
-  fecha        DateTime     @default(now())
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  usuario      Usuario      @relation("UsuarioTickets", fields: [usuarioId], references: [id])
-  items        TicketItem[]
+  id             Int          @id @default(autoincrement())
+  usuarioId      Int
+  clienteId      Int?
+  turnoCajaId    Int?
+  numeroTicket   Int
+  fecha          DateTime     @default(now())
+  subtotal       Decimal      @default(0) @db.Decimal(12, 2)
+  impuestos      Decimal      @default(0) @db.Decimal(12, 2)
+  descuentoTotal Decimal      @default(0) @db.Decimal(12, 2)
+  total          Decimal      @default(0) @db.Decimal(12, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  usuario        Usuario      @relation("UsuarioTickets", fields: [usuarioId], references: [id])
+  turnoCaja      TurnoCaja?   @relation(fields: [turnoCajaId], references: [id])
+  items          TicketItem[]
 
   @@unique([usuarioId, fecha, numeroTicket], name: "ticket_por_usuario_y_dia")
   @@index([usuarioId, fecha], map: "idx_ticket_usuario_fecha")
+  @@index([turnoCajaId], map: "idx_ticket_turno")
 }
 
 model TicketItem {
@@ -102,6 +192,8 @@ model TicketItem {
   productoId     Int
   cantidad       Int      @default(1)
   precioUnitario Decimal  @db.Decimal(10, 2)
+  descuento      Decimal  @default(0) @db.Decimal(10, 2)
+  impuesto       Decimal  @default(0) @db.Decimal(10, 2)
   total          Decimal  @db.Decimal(12, 2)
   producto       Producto @relation(fields: [productoId], references: [id])
   ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -174,4 +266,15 @@ enum EventoTipo {
 enum MovimientoTipo {
   IN
   OUT
+}
+
+enum EstadoOrden {
+  PENDIENTE
+  RECIBIDA
+  CANCELADA
+}
+
+enum EstadoTurno {
+  ABIERTO
+  CERRADO
 }

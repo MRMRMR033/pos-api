@@ -18,19 +18,34 @@ export const PERMISSIONS = {
   VENTAS_EDITAR: 'ventas:editar',
   VENTAS_ELIMINAR: 'ventas:eliminar',
 
+  // COMPRAS
+  COMPRAS_CREATE: 'compras:crear',
+  COMPRAS_READ: 'compras:ver',
+  COMPRAS_UPDATE: 'compras:editar',
+  COMPRAS_DELETE: 'compras:eliminar',
+  COMPRAS_RECEIVE: 'compras:recibir',
+
+  // CLIENTES
+  CLIENTES_CREATE: 'clientes:crear',
+  CLIENTES_READ: 'clientes:ver',
+  CLIENTES_UPDATE: 'clientes:editar',
+  CLIENTES_DELETE: 'clientes:eliminar',
+
   // CAJA
-  CAJA_ABRIR: 'caja:abrir',
-  CAJA_CERRAR: 'caja:cerrar',
   CAJA_VER_MOVIMIENTOS: 'caja:ver_movimientos',
   CAJA_VER_MOVIMIENTOS_TODOS: 'caja:ver_movimientos_todos',
   CAJA_REGISTRAR_ENTRADA: 'caja:registrar_entrada',
   CAJA_REGISTRAR_SALIDA: 'caja:registrar_salida',
+  CAJA_OPEN: 'caja:abrir',
+  CAJA_CLOSE: 'caja:cerrar',
+  CAJA_READ: 'caja:ver',
 
   // REPORTES
   REPORTES_VENTAS_DIA: 'reportes:ventas_dia',
   REPORTES_VENTAS_PERIODO: 'reportes:ventas_periodo',
   REPORTES_INVENTARIO: 'reportes:inventario',
   REPORTES_FINANCIEROS: 'reportes:financieros',
+  REPORTS_READ: 'reportes:ver',
 
   // CATEGORÍAS
   CATEGORIAS_VER: 'categorias:ver',
@@ -75,17 +90,32 @@ export const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.VENTAS_EDITAR]: 'Editar ventas',
   [PERMISSIONS.VENTAS_ELIMINAR]: 'Eliminar ventas',
 
-  [PERMISSIONS.CAJA_ABRIR]: 'Abrir caja',
-  [PERMISSIONS.CAJA_CERRAR]: 'Cerrar caja',
+  // COMPRAS
+  [PERMISSIONS.COMPRAS_CREATE]: 'Crear órdenes de compra',
+  [PERMISSIONS.COMPRAS_READ]: 'Ver órdenes de compra',
+  [PERMISSIONS.COMPRAS_UPDATE]: 'Editar órdenes de compra',
+  [PERMISSIONS.COMPRAS_DELETE]: 'Eliminar órdenes de compra',
+  [PERMISSIONS.COMPRAS_RECEIVE]: 'Recibir órdenes de compra',
+
+  // CLIENTES
+  [PERMISSIONS.CLIENTES_CREATE]: 'Crear clientes',
+  [PERMISSIONS.CLIENTES_READ]: 'Ver clientes',
+  [PERMISSIONS.CLIENTES_UPDATE]: 'Editar clientes',
+  [PERMISSIONS.CLIENTES_DELETE]: 'Eliminar clientes',
+
   [PERMISSIONS.CAJA_VER_MOVIMIENTOS]: 'Ver movimientos de caja propios',
   [PERMISSIONS.CAJA_VER_MOVIMIENTOS_TODOS]: 'Ver todos los movimientos de caja',
   [PERMISSIONS.CAJA_REGISTRAR_ENTRADA]: 'Registrar entradas de dinero',
   [PERMISSIONS.CAJA_REGISTRAR_SALIDA]: 'Registrar salidas de dinero',
+  [PERMISSIONS.CAJA_OPEN]: 'Abrir turno de caja',
+  [PERMISSIONS.CAJA_CLOSE]: 'Cerrar turno de caja',
+  [PERMISSIONS.CAJA_READ]: 'Ver información de caja',
 
   [PERMISSIONS.REPORTES_VENTAS_DIA]: 'Ver reporte de ventas del día',
   [PERMISSIONS.REPORTES_VENTAS_PERIODO]: 'Ver reportes de ventas por período',
   [PERMISSIONS.REPORTES_INVENTARIO]: 'Ver reportes de inventario',
   [PERMISSIONS.REPORTES_FINANCIEROS]: 'Ver reportes financieros',
+  [PERMISSIONS.REPORTS_READ]: 'Ver reportes del sistema',
 
   [PERMISSIONS.CATEGORIAS_VER]: 'Ver categorías',
   [PERMISSIONS.CATEGORIAS_CREAR]: 'Crear categorías',
@@ -111,6 +141,8 @@ export const PERMISSION_DESCRIPTIONS = {
 export const PERMISSION_MODULES = {
   PRODUCTOS: 'productos',
   VENTAS: 'ventas',
+  COMPRAS: 'compras',
+  CLIENTES: 'clientes',
   CAJA: 'caja',
   REPORTES: 'reportes',
   CATEGORIAS: 'categorias',

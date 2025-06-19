@@ -15,6 +15,10 @@ import { SessionEventModule } from './session-event/session-event.module';
 import { ReportModule } from './report/report.module';
 import { TicketItemModule } from './ticket-item/ticket-item.module';
 import { InitializationModule } from './common/initialization.module';
+import { CompraModule } from './compra/compra.module';
+import { CajaModule } from './caja/caja.module';
+import { ReportesModule } from './reportes/reportes.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -39,8 +43,14 @@ import { InitializationModule } from './common/initialization.module';
 
     // Módulo de reportes
     ReportModule,
+    ReportesModule,
 
     TicketItemModule,
+
+    // Nuevos módulos
+    CompraModule,
+    CajaModule,
+    AdminModule,
 
     // Módulo de inicialización
     InitializationModule,

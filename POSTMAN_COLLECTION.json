@@ -1,0 +1,209 @@
+{
+  "info": {
+    "name": "POS API Complete - Sin Clientes",
+    "description": "Colección completa de endpoints para el sistema POS (sin módulo de clientes)",
+    "version": "2.1.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@pos-system.com\",\n  \"password\": \"12345\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', response.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Compras",
+      "item": [
+        {
+          "name": "Crear Orden de Compra",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroOrden\": \"ORD-{{$timestamp}}\",\n  \"proveedorId\": 1,\n  \"fechaEntrega\": \"2024-07-01\",\n  \"observaciones\": \"Pedido de prueba\",\n  \"detalles\": [\n    {\n      \"productoId\": 1,\n      \"cantidad\": 50,\n      \"precioUnitario\": 25.50\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/compra",
+              "host": ["{{base_url}}"],
+              "path": ["compra"]
+            }
+          }
+        },
+        {
+          "name": "Listar Órdenes de Compra",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/compra?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["compra"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Caja",
+      "item": [
+        {
+          "name": "Abrir Turno",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"saldoInicial\": 1000.00,\n  \"observaciones\": \"Inicio de turno\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/caja/abrir",
+              "host": ["{{base_url}}"],
+              "path": ["caja", "abrir"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Turno Actual",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/caja/actual",
+              "host": ["{{base_url}}"],
+              "path": ["caja", "actual"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ventas",
+      "item": [
+        {
+          "name": "Crear Venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"cantidad\": 2,\n      \"precioUnitario\": 25.50,\n      \"descuento\": 2.00\n    }\n  ],\n  \"descuentoManual\": 10.00,\n  \"observaciones\": \"Venta de prueba\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ventas",
+              "host": ["{{base_url}}"],
+              "path": ["ventas"]
+            }
+          }
+        },
+        {
+          "name": "Listar Ventas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/ventas?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["ventas"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Reporte de Ventas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reportes/ventas?desde=2024-06-01&hasta=2024-06-30",
+              "host": ["{{base_url}}"],
+              "path": ["reportes", "ventas"]
+            }
+          }
+        },
+        {
+          "name": "Reporte de Inventario",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reportes/inventario",
+              "host": ["{{base_url}}"],
+              "path": ["reportes", "inventario"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

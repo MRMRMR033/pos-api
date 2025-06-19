@@ -15,6 +15,12 @@ export class ApiResponseDto<T = any> {
 
   @ApiProperty({ description: 'Código de estado HTTP' })
   statusCode: number;
+
+  @ApiProperty({ description: 'Versión de la API', example: '1' })
+  apiVersion?: string;
+
+  @ApiProperty({ description: 'ID de request para tracking' })
+  requestId?: string;
 }
 
 export class PaginationMetaDto {
@@ -35,6 +41,12 @@ export class PaginationMetaDto {
 
   @ApiProperty({ description: 'Tiene página siguiente', example: true })
   hasNextPage: boolean;
+
+  @ApiProperty({ description: 'Timestamp de la respuesta' })
+  timestamp: string;
+
+  @ApiProperty({ description: 'Versión de la API', example: '1' })
+  apiVersion: string;
 }
 
 export class PaginatedResponseDto<T = any> {
@@ -70,4 +82,10 @@ export class ErrorResponseDto {
 
   @ApiProperty({ description: 'Tipo de error', example: 'ValidationError', required: false })
   error?: string;
+
+  @ApiProperty({ description: 'Versión de la API', example: '1' })
+  apiVersion?: string;
+
+  @ApiProperty({ description: 'ID de request para tracking' })
+  requestId?: string;
 }
