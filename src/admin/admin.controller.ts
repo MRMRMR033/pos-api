@@ -48,7 +48,16 @@ export class AdminController {
     }
   })
   async healthCheck() {
-    return this.adminService.performHealthCheck();
+    console.log('\n⚙️ [ADMIN] GET /admin/health');
+    
+    try {
+      const result = await this.adminService.performHealthCheck();
+      console.log('✅ Health check completed successfully:', { status: result.status });
+      return result;
+    } catch (error) {
+      console.log('❌ Health check failed:', error.message);
+      throw error;
+    }
   }
 
   @Get('logs')
@@ -58,10 +67,14 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Archivo de logs' })
   async downloadLogs(@Res() res: Response) {
+    console.log('\n⚙️ [ADMIN] GET /admin/logs');
+    
     try {
       const logsPath = await this.adminService.getLogsFile();
+      console.log('✅ Logs file download initiated:', { path: logsPath });
       res.download(logsPath, 'pos-system.log');
     } catch (error) {
+      console.log('❌ Logs download failed:', error.message);
       res.status(HttpStatus.NOT_FOUND).json({
         message: 'Archivo de logs no encontrado',
         error: error.message
@@ -88,7 +101,16 @@ export class AdminController {
     }
   })
   async integrityCheck() {
-    return this.adminService.performIntegrityCheck();
+    console.log('\n⚙️ [ADMIN] GET /admin/integrity-check');
+    
+    try {
+      const result = await this.adminService.performIntegrityCheck();
+      console.log('✅ Integrity check completed successfully:', { status: result.status, errorsCount: result.errors?.length || 0 });
+      return result;
+    } catch (error) {
+      console.log('❌ Integrity check failed:', error.message);
+      throw error;
+    }
   }
 
   @Post('backup')
@@ -110,7 +132,16 @@ export class AdminController {
     }
   })
   async createBackup() {
-    return this.adminService.createDatabaseBackup();
+    console.log('\n⚙️ [ADMIN] POST /admin/backup');
+    
+    try {
+      const result = await this.adminService.createDatabaseBackup();
+      console.log('✅ Database backup created successfully:', { filename: result.filename, size: result.size });
+      return result;
+    } catch (error) {
+      console.log('❌ Database backup creation failed:', error.message);
+      throw error;
+    }
   }
 
   @Post('restore')
@@ -120,11 +151,21 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Base de datos restaurada exitosamente' })
   async restoreBackup(@Body() restoreData: { backupData: string; format: 'sql' | 'json' }) {
-    if (!restoreData.backupData) {
-      throw new BadRequestException('Datos de backup requeridos');
-    }
+    console.log('\n⚙️ [ADMIN] POST /admin/restore');
+    console.log('📥 Body:', { format: restoreData.format, hasBackupData: !!restoreData.backupData });
     
-    return this.adminService.restoreDatabaseBackup(restoreData.backupData, restoreData.format);
+    try {
+      if (!restoreData.backupData) {
+        throw new BadRequestException('Datos de backup requeridos');
+      }
+      
+      const result = await this.adminService.restoreDatabaseBackup(restoreData.backupData, restoreData.format);
+      console.log('✅ Database restore completed successfully:', { format: restoreData.format });
+      return result;
+    } catch (error) {
+      console.log('❌ Database restore failed:', error.message);
+      throw error;
+    }
   }
 
   @Post('rotate-secrets')
@@ -134,6 +175,15 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Secretos rotados exitosamente' })
   async rotateSecrets() {
-    return this.adminService.rotateSystemSecrets();
+    console.log('\n⚙️ [ADMIN] POST /admin/rotate-secrets');
+    
+    try {
+      const result = await this.adminService.rotateSystemSecrets();
+      console.log('✅ System secrets rotated successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ System secrets rotation failed:', error.message);
+      throw error;
+    }
   }
 }

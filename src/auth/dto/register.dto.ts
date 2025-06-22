@@ -20,5 +20,5 @@ export class RegisterDto {
 
   @ApiProperty({ description: 'Rol del usuario', enum: Rol, example: Rol.empleado })
   @IsEnum(Rol)
-  role: Rol;
+  rol: Rol;
 }

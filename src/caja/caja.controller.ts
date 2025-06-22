@@ -34,7 +34,19 @@ export class CajaController {
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 409, description: 'Ya tienes un turno abierto o la caja está ocupada' })
   abrir(@Body() abrirCajaDto: AbrirCajaDto, @Req() req: any) {
-    return this.cajaService.abrir(abrirCajaDto, req.user.id);
+    console.log('\n💰 [CAJA] POST /caja/abrir');
+    console.log('📥 Request body:', abrirCajaDto);
+    console.log('📥 User ID:', req.user?.id);
+    
+    try {
+      const result = this.cajaService.abrir(abrirCajaDto, req.user.id);
+      console.log('📤 Response: Cash register opened successfully');
+      console.log('✅ Cash register opening completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Cash register opening failed:', error.message);
+      throw error;
+    }
   }
 
   @Post(':id/cerrar')
@@ -48,7 +60,20 @@ export class CajaController {
     @Body() cerrarCajaDto: CerrarCajaDto,
     @Req() req: any,
   ) {
-    return this.cajaService.cerrar(id, cerrarCajaDto, req.user.id);
+    console.log('\n💰 [CAJA] POST /caja/:id/cerrar');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', cerrarCajaDto);
+    console.log('📥 User ID:', req.user?.id);
+    
+    try {
+      const result = this.cajaService.cerrar(id, cerrarCajaDto, req.user.id);
+      console.log('📤 Response: Cash register closed successfully');
+      console.log('✅ Cash register closing completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Cash register closing failed:', error.message);
+      throw error;
+    }
   }
 
   @Get('actual')
@@ -57,7 +82,18 @@ export class CajaController {
   @ApiResponse({ status: 200, description: 'Turno actual con resumen de movimientos' })
   @ApiResponse({ status: 404, description: 'No tienes un turno abierto' })
   getTurnoActual(@Req() req: any) {
-    return this.cajaService.getTurnoActual(req.user.id);
+    console.log('\n💰 [CAJA] GET /caja/actual');
+    console.log('📥 User ID:', req.user?.id);
+    
+    try {
+      const result = this.cajaService.getTurnoActual(req.user.id);
+      console.log('📤 Response: Current shift retrieved successfully');
+      console.log('✅ Current shift retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Current shift retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @Get('turnos')
@@ -74,19 +110,30 @@ export class CajaController {
     @Query('usuarioId') usuarioId?: string,
     @Query('estado') estado?: EstadoTurno,
   ) {
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 10;
-    const userIdNum = usuarioId ? parseInt(usuarioId) : undefined;
+    console.log('\n💰 [CAJA] GET /caja/turnos');
+    console.log('📥 Query params:', { page, limit, usuarioId, estado });
     
-    if (pageNum < 1 || limitNum < 1) {
-      throw new BadRequestException('Page y limit deben ser números positivos');
-    }
+    try {
+      const pageNum = page ? parseInt(page) : 1;
+      const limitNum = limit ? parseInt(limit) : 10;
+      const userIdNum = usuarioId ? parseInt(usuarioId) : undefined;
+      
+      if (pageNum < 1 || limitNum < 1) {
+        throw new BadRequestException('Page y limit deben ser números positivos');
+      }
 
-    if (usuarioId && isNaN(userIdNum!)) {
-      throw new BadRequestException('usuarioId debe ser un número válido');
+      if (usuarioId && isNaN(userIdNum!)) {
+        throw new BadRequestException('usuarioId debe ser un número válido');
+      }
+      
+      const result = this.cajaService.findAll(pageNum, limitNum, userIdNum, estado);
+      console.log('📤 Response: Shifts list retrieved successfully');
+      console.log('✅ Shifts list retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Shifts list retrieval failed:', error.message);
+      throw error;
     }
-    
-    return this.cajaService.findAll(pageNum, limitNum, userIdNum, estado);
   }
 
   @Get('turnos/:id')
@@ -95,7 +142,18 @@ export class CajaController {
   @ApiResponse({ status: 200, description: 'Turno encontrado con todas sus ventas' })
   @ApiResponse({ status: 404, description: 'Turno no encontrado' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.cajaService.findOne(id);
+    console.log('\n💰 [CAJA] GET /caja/turnos/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.cajaService.findOne(id);
+      console.log('📤 Response: Shift details retrieved successfully');
+      console.log('✅ Shift details retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Shift details retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @Get('turnos/:id/movimientos')
@@ -104,6 +162,17 @@ export class CajaController {
   @ApiResponse({ status: 200, description: 'Movimientos de caja del turno' })
   @ApiResponse({ status: 404, description: 'Turno no encontrado' })
   getMovimientosCaja(@Param('id', ParseIntPipe) id: number) {
-    return this.cajaService.getMovimientosCaja(id);
+    console.log('\n💰 [CAJA] GET /caja/turnos/:id/movimientos');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.cajaService.getMovimientosCaja(id);
+      console.log('📤 Response: Cash movements retrieved successfully');
+      console.log('✅ Cash movements retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Cash movements retrieval failed:', error.message);
+      throw error;
+    }
   }
 }

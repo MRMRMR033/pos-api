@@ -28,6 +28,7 @@ import {
 import { ProductoService } from './producto.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { AdjustStockDto } from './dto/adjust-stock.dto';
 import { ProductoEntity } from './entities/producto.entity';
 import { Producto } from '../../generated/prisma'; // Prisma type
 import { Decimal } from '../../generated/prisma/runtime/library'; // para tipar el decimal
@@ -145,8 +146,19 @@ export class ProductoController {
     }
   })
   async create(@Body() dto: CreateProductoDto): Promise<ProductoEntity> {
-    const creado = await this.productoService.create(dto);
-    return this.mapProducto(creado);
+    console.log('\n📰 [PRODUCTOS] POST /producto');
+    console.log('📥 Request body:', dto);
+    
+    try {
+      const creado = await this.productoService.create(dto);
+      const result = this.mapProducto(creado);
+      console.log('📤 Response: Product created with ID', result.id, 'and name', result.nombre);
+      console.log('✅ Product created successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Product creation failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PRODUCTOS_VER)
@@ -154,8 +166,18 @@ export class ProductoController {
   @ApiOperation({ summary: 'Obtener todos los productos' })
   @ApiResponse({ status: 200, description: 'Listado de productos', type: [ProductoEntity] })
   async findAll(): Promise<ProductoEntity[]> {
-    const list = await this.productoService.findAll();
-    return list.map(p => this.mapProducto(p));
+    console.log('\n📰 [PRODUCTOS] GET /producto');
+    
+    try {
+      const list = await this.productoService.findAll();
+      const result = list.map(p => this.mapProducto(p));
+      console.log('📤 Response: Found', result.length, 'products');
+      console.log('✅ Products list retrieved successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Products list retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PRODUCTOS_VER)
@@ -165,8 +187,19 @@ export class ProductoController {
   @ApiResponse({ status: 200, description: 'Producto encontrado', type: ProductoEntity })
   @ApiResponse({ status: 404, description: 'Producto no encontrado' })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<ProductoEntity> {
-    const p = await this.productoService.findOne(id);
-    return this.mapProducto(p);
+    console.log('\n📰 [PRODUCTOS] GET /producto/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const p = await this.productoService.findOne(id);
+      const result = this.mapProducto(p);
+      console.log('📤 Response: Product', result.id, 'with name', result.nombre);
+      console.log('✅ Product retrieved successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Product retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PRODUCTOS_EDITAR)
@@ -180,8 +213,55 @@ export class ProductoController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductoDto,
   ): Promise<ProductoEntity> {
-    const updated = await this.productoService.update(id, dto);
-    return this.mapProducto(updated);
+    console.log('\n📰 [PRODUCTOS] PATCH /producto/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', dto);
+    
+    try {
+      const updated = await this.productoService.update(id, dto);
+      const result = this.mapProducto(updated);
+      console.log('📤 Response: Product updated successfully');
+      console.log('✅ Product update completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Product update failed:', error.message);
+      throw error;
+    }
+  }
+
+  @RequirePermission(PERMISSIONS.PRODUCTOS_AJUSTAR_STOCK)
+  @Post(':id/adjust-stock')
+  @ApiOperation({ 
+    summary: 'Ajustar stock de un producto',
+    description: 'Permite realizar ajustes de inventario: entradas, salidas o ajustes absolutos'
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'ID del producto' })
+  @ApiBody({ type: AdjustStockDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Stock ajustado exitosamente',
+    type: ProductoEntity
+  })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o stock insuficiente' })
+  @ApiResponse({ status: 404, description: 'Producto no encontrado' })
+  async adjustStock(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AdjustStockDto,
+  ): Promise<ProductoEntity> {
+    console.log('\n📰 [PRODUCTOS] POST /producto/:id/adjust-stock');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', dto);
+    
+    try {
+      const updated = await this.productoService.adjustStock(id, dto);
+      const result = this.mapProducto(updated);
+      console.log('📤 Response: Stock adjusted successfully');
+      console.log('✅ Stock adjustment completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Stock adjustment failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PRODUCTOS_ELIMINAR)
@@ -192,6 +272,16 @@ export class ProductoController {
   @ApiResponse({ status: 204, description: 'Producto eliminado' })
   @ApiResponse({ status: 404, description: 'Producto no encontrado' })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this.productoService.remove(id);
+    console.log('\n📰 [PRODUCTOS] DELETE /producto/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      await this.productoService.remove(id);
+      console.log('📤 Response: Product deleted successfully');
+      console.log('✅ Product deletion completed');
+    } catch (error) {
+      console.log('❌ Product deletion failed:', error.message);
+      throw error;
+    }
   }
 }

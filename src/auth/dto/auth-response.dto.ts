@@ -2,10 +2,22 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginResponseDto {
   @ApiProperty({ 
-    description: 'JWT token de acceso',
+    description: 'JWT token de acceso (válido por 15 minutos)',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW5AcG9zLXN5c3RlbS5jb20iLCJmdWxsTmFtZSI6IkFkbWluaXN0cmFkb3IgZGVsIFNpc3RlbWEiLCJpYXQiOjE3NTAwNzM1NTUsImV4cCI6MTc1MDA3NzE1NX0.wDbzMfzfnRAFGcbYHOCKSAs_JUltwLEDsw0MyhfRDSU'
   })
   access_token: string;
+
+  @ApiProperty({ 
+    description: 'Token de refresco (válido por 7 días)',
+    example: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01234567'
+  })
+  refresh_token: string;
+
+  @ApiProperty({ 
+    description: 'Tiempo de expiración del access token en segundos',
+    example: 900
+  })
+  expires_in: number;
 }
 
 export class UserProfileResponseDto {

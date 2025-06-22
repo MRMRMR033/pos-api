@@ -26,7 +26,18 @@ export class CategoriaController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para crear categorías', type: ErrorResponseDto })
   create(@Body() createCategoriaDto: CreateCategoriaDto) {
-    return this.categoriaService.create(createCategoriaDto);
+    console.log('\n📎 [CATEGORIAS] POST /categoria');
+    console.log('📥 Request body:', createCategoriaDto);
+    
+    try {
+      const result = this.categoriaService.create(createCategoriaDto);
+      console.log('📤 Response: Category created successfully');
+      console.log('✅ Category creation completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Category creation failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CATEGORIAS_VER)
@@ -37,7 +48,17 @@ export class CategoriaController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para ver categorías', type: ErrorResponseDto })
   findAll() {
-    return this.categoriaService.findAll();
+    console.log('\n📎 [CATEGORIAS] GET /categoria');
+    
+    try {
+      const result = this.categoriaService.findAll();
+      console.log('📤 Response: Categories list retrieved successfully');
+      console.log('✅ Categories list retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Categories list retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CATEGORIAS_VER)
@@ -50,7 +71,18 @@ export class CategoriaController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para ver categorías', type: ErrorResponseDto })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.categoriaService.findOne(id);
+    console.log('\n📎 [CATEGORIAS] GET /categoria/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.categoriaService.findOne(id);
+      console.log('📤 Response: Category retrieved successfully');
+      console.log('✅ Category retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Category retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CATEGORIAS_EDITAR)
@@ -64,7 +96,19 @@ export class CategoriaController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para editar categorías', type: ErrorResponseDto })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateCategoriaDto: UpdateCategoriaDto) {
-    return this.categoriaService.update(id, updateCategoriaDto);
+    console.log('\n📎 [CATEGORIAS] PATCH /categoria/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', updateCategoriaDto);
+    
+    try {
+      const result = this.categoriaService.update(id, updateCategoriaDto);
+      console.log('📤 Response: Category updated successfully');
+      console.log('✅ Category update completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Category update failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CATEGORIAS_ELIMINAR)
@@ -78,6 +122,17 @@ export class CategoriaController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para eliminar categorías', type: ErrorResponseDto })
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.categoriaService.remove(id);
+    console.log('\n📎 [CATEGORIAS] DELETE /categoria/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.categoriaService.remove(id);
+      console.log('📤 Response: Category deleted successfully');
+      console.log('✅ Category deletion completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Category deletion failed:', error.message);
+      throw error;
+    }
   }
 }

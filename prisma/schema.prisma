@@ -160,8 +160,28 @@ model Usuario {
   userPermissions    UserPermission[]
   ordenesCompra      OrdenCompra[]
   turnosCaja         TurnoCaja[]
+  sessions           Session[]
 
   @@index([email], map: "idx_usuario_email")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  usuarioId    Int
+  refreshToken String   @unique
+  isActive     Boolean  @default(true)
+  deviceInfo   String?  // Device fingerprint or user agent
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastUsedAt   DateTime @default(now())
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId], map: "idx_session_usuario")
+  @@index([refreshToken], map: "idx_session_refresh_token")
+  @@index([expiresAt], map: "idx_session_expires")
+  @@index([isActive], map: "idx_session_active")
 }
 
 model Ticket {

@@ -29,6 +29,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { RequirePermission } from '../auth/permissions.decorator';
 import { PERMISSIONS } from '../auth/permissions.constants';
+import { CajaService } from '../caja/caja.service';
 
 @ApiTags('Ventas')
 @ApiBearerAuth()
@@ -36,7 +37,10 @@ import { PERMISSIONS } from '../auth/permissions.constants';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class VentasController {
-  constructor(private readonly ventasService: EnhancedTicketService) {}
+  constructor(
+    private readonly ventasService: EnhancedTicketService,
+    private readonly cajaService: CajaService
+  ) {}
 
   @Post()
   @RequirePermission(PERMISSIONS.VENTAS_CREAR)
@@ -96,23 +100,39 @@ export class VentasController {
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 403, description: 'Sin permisos' })
   async crear(@Body() createVentaDto: CreateEnhancedTicketDto, @Req() req: any) {
-    // El usuarioId se toma del JWT para mayor seguridad
-    const ventaData = {
-      ...createVentaDto,
-      usuarioId: req.user.id, // Sobreescribir con el usuario del token
-    };
+    console.log('\n🛒 [VENTAS] POST /ventas');
+    console.log('📥 Request body:', createVentaDto);
+    console.log('📥 User ID from token:', req.user?.id);
+    
+    try {
+      // El usuarioId se toma del JWT para mayor seguridad
+      const ventaData = {
+        ...createVentaDto,
+        usuarioId: req.user.id, // Sobreescribir con el usuario del token
+      };
 
-    // Validar que hay items
-    if (!ventaData.items || ventaData.items.length === 0) {
-      throw new BadRequestException('La venta debe tener al menos un item');
+      // Validar que hay items
+      if (!ventaData.items || ventaData.items.length === 0) {
+        throw new BadRequestException('La venta debe tener al menos un item');
+      }
+
+      // Obtener automáticamente el turno activo del usuario
+      const turnoActivo = await this.obtenerTurnoActivoUsuario(req.user.id);
+      if (!turnoActivo) {
+        throw new BadRequestException('Debes tener un turno de caja abierto para realizar ventas');
+      }
+      
+      // Asignar automáticamente el turnoCajaId del turno activo
+      ventaData.turnoCajaId = turnoActivo.id;
+
+      const result = await this.ventasService.create(ventaData);
+      console.log('📤 Response: Venta creada con ID', result.id, 'y total', result.total);
+      console.log('✅ Sale created successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Sale creation failed:', error.message);
+      throw error;
     }
-
-    // Si se especifica turnoCajaId, verificar que el usuario tenga un turno abierto
-    if (ventaData.turnoCajaId) {
-      // Esta validación podría agregarse aquí si es necesaria
-    }
-
-    return this.ventasService.create(ventaData);
   }
 
   @Get()
@@ -189,35 +209,47 @@ export class VentasController {
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
   ) {
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 10;
-    const userIdNum = usuarioId ? parseInt(usuarioId) : undefined;
+    console.log('\n🛒 [VENTAS] GET /ventas');
+    console.log('📥 Query params:', { page, limit, usuarioId, desde, hasta });
+    console.log('📥 User ID:', req.user?.id);
+    
+    try {
+      const pageNum = page ? parseInt(page) : 1;
+      const limitNum = limit ? parseInt(limit) : 10;
+      const userIdNum = usuarioId ? parseInt(usuarioId) : undefined;
 
-    // Validaciones
-    if (pageNum < 1 || limitNum < 1) {
-      throw new BadRequestException('Page y limit deben ser números positivos');
+      // Validaciones
+      if (pageNum < 1 || limitNum < 1) {
+        throw new BadRequestException('Page y limit deben ser números positivos');
+      }
+
+      if (usuarioId && isNaN(userIdNum!)) {
+        throw new BadRequestException('usuarioId debe ser un número válido');
+      }
+
+
+      if (desde && isNaN(Date.parse(desde))) {
+        throw new BadRequestException('Formato de fecha inválido para "desde". Use YYYY-MM-DD');
+      }
+
+      if (hasta && isNaN(Date.parse(hasta))) {
+        throw new BadRequestException('Formato de fecha inválido para "hasta". Use YYYY-MM-DD');
+      }
+
+      // Si el usuario no tiene permiso para ver todas las ventas, solo puede ver las propias
+      let finalUserId = userIdNum;
+      if (!req.user.permissions?.includes(PERMISSIONS.VENTAS_VER_TODAS)) {
+        finalUserId = req.user.id; // Forzar a que solo vea sus propias ventas
+      }
+
+      const result = await this.ventasService.findAll(pageNum, limitNum, finalUserId, desde, hasta);
+      console.log('📤 Response: Found', result.data?.length || 0, 'sales, total:', result.meta?.total || 0);
+      console.log('✅ Sales list retrieved successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Sales list retrieval failed:', error.message);
+      throw error;
     }
-
-    if (usuarioId && isNaN(userIdNum!)) {
-      throw new BadRequestException('usuarioId debe ser un número válido');
-    }
-
-
-    if (desde && isNaN(Date.parse(desde))) {
-      throw new BadRequestException('Formato de fecha inválido para "desde". Use YYYY-MM-DD');
-    }
-
-    if (hasta && isNaN(Date.parse(hasta))) {
-      throw new BadRequestException('Formato de fecha inválido para "hasta". Use YYYY-MM-DD');
-    }
-
-    // Si el usuario no tiene permiso para ver todas las ventas, solo puede ver las propias
-    let finalUserId = userIdNum;
-    if (!req.user.permissions?.includes(PERMISSIONS.VENTAS_VER_TODAS)) {
-      finalUserId = req.user.id; // Forzar a que solo vea sus propias ventas
-    }
-
-    return this.ventasService.findAll(pageNum, limitNum, finalUserId, desde, hasta);
   }
 
   @Get(':id')
@@ -259,16 +291,27 @@ export class VentasController {
   })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async obtenerPorId(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    const venta = await this.ventasService.findOneWithDetails(id);
+    console.log('\n🛒 [VENTAS] GET /ventas/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 User ID:', req.user?.id);
     
-    // Si el usuario no tiene permiso para ver todas las ventas, verificar que sea suya
-    if (!req.user.permissions?.includes(PERMISSIONS.VENTAS_VER_TODAS)) {
-      if (venta.usuarioId !== req.user.id) {
-        throw new BadRequestException('No tienes permisos para ver esta venta');
+    try {
+      const venta = await this.ventasService.findOneWithDetails(id);
+      
+      // Si el usuario no tiene permiso para ver todas las ventas, verificar que sea suya
+      if (!req.user.permissions?.includes(PERMISSIONS.VENTAS_VER_TODAS)) {
+        if (venta.usuarioId !== req.user.id) {
+          throw new BadRequestException('No tienes permisos para ver esta venta');
+        }
       }
-    }
 
-    return venta;
+      console.log('📤 Response: Sale', venta.id, 'with total', venta.total);
+      console.log('✅ Sale details retrieved successfully');
+      return venta;
+    } catch (error) {
+      console.log('❌ Sale details retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @Patch(':id')
@@ -285,7 +328,19 @@ export class VentasController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateVentaDto: UpdateTicketDto
   ) {
-    return this.ventasService.update(id, updateVentaDto);
+    console.log('\n🛒 [VENTAS] PATCH /ventas/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', updateVentaDto);
+    
+    try {
+      const result = await this.ventasService.update(id, updateVentaDto);
+      console.log('📤 Response: Sale updated successfully');
+      console.log('✅ Sale update completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Sale update failed:', error.message);
+      throw error;
+    }
   }
 
   @Delete(':id')
@@ -298,8 +353,19 @@ export class VentasController {
   @ApiResponse({ status: 200, description: 'Venta cancelada exitosamente' })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async cancelar(@Param('id', ParseIntPipe) id: number) {
-    await this.ventasService.remove(id);
-    return { message: 'Venta cancelada exitosamente' };
+    console.log('\n🛒 [VENTAS] DELETE /ventas/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      await this.ventasService.remove(id);
+      const result = { message: 'Venta cancelada exitosamente' };
+      console.log('📤 Response:', result);
+      console.log('✅ Sale cancelled successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Sale cancellation failed:', error.message);
+      throw error;
+    }
   }
 
   @Post(':id/recalcular')
@@ -312,6 +378,31 @@ export class VentasController {
   @ApiResponse({ status: 200, description: 'Totales recalculados exitosamente' })
   @ApiResponse({ status: 404, description: 'Venta no encontrada' })
   async recalcular(@Param('id', ParseIntPipe) id: number) {
-    return this.ventasService.recalculateTicketTotals(id);
+    console.log('\n🛒 [VENTAS] POST /ventas/:id/recalcular');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = await this.ventasService.recalculateTicketTotals(id);
+      console.log('📤 Response: Totals recalculated successfully');
+      console.log('✅ Sale totals recalculation completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Sale totals recalculation failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Método auxiliar para obtener el turno activo del usuario
+   */
+  private async obtenerTurnoActivoUsuario(usuarioId: number) {
+    try {
+      const turno = await this.cajaService.getTurnoActual(usuarioId);
+      return turno;
+    } catch (error) {
+      // Si no hay turno activo, devolver null
+      console.log('⚠️ No hay turno activo para usuario:', usuarioId);
+      return null;
+    }
   }
 }

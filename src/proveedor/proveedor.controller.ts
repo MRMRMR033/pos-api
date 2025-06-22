@@ -40,7 +40,17 @@ export class ProveedorController {
   async create(
     @Body() dto: CreateProveedorDto,
   ): Promise<ProveedorEntity> {
-    return this.proveedorService.create(dto);
+    console.log('\n🏢 [PROVEEDORES] POST /proveedor');
+    console.log('📥 Body:', dto);
+    
+    try {
+      const result = await this.proveedorService.create(dto);
+      console.log('✅ Proveedor created successfully:', { id: result.id, nombre: result.nombre });
+      return result;
+    } catch (error) {
+      console.log('❌ Proveedor creation failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PROVEEDORES_VER)
@@ -52,7 +62,16 @@ export class ProveedorController {
     type: [ProveedorEntity],
   })
   async findAll(): Promise<ProveedorEntity[]> {
-    return this.proveedorService.findAll();
+    console.log('\n🏢 [PROVEEDORES] GET /proveedor');
+    
+    try {
+      const result = await this.proveedorService.findAll();
+      console.log('✅ Proveedores retrieved successfully:', { count: result.length });
+      return result;
+    } catch (error) {
+      console.log('❌ Proveedores retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PROVEEDORES_VER)
@@ -64,7 +83,17 @@ export class ProveedorController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ProveedorEntity> {
-    return this.proveedorService.findOne(id);
+    console.log('\n🏢 [PROVEEDORES] GET /proveedor/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = await this.proveedorService.findOne(id);
+      console.log('✅ Proveedor retrieved successfully:', { id: result.id, nombre: result.nombre });
+      return result;
+    } catch (error) {
+      console.log('❌ Proveedor retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PROVEEDORES_EDITAR)
@@ -78,7 +107,18 @@ export class ProveedorController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProveedorDto,
   ): Promise<ProveedorEntity> {
-    return this.proveedorService.update(id, dto);
+    console.log('\n🏢 [PROVEEDORES] PATCH /proveedor/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Body:', dto);
+    
+    try {
+      const result = await this.proveedorService.update(id, dto);
+      console.log('✅ Proveedor updated successfully:', { id: result.id, nombre: result.nombre });
+      return result;
+    } catch (error) {
+      console.log('❌ Proveedor update failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.PROVEEDORES_ELIMINAR)
@@ -91,6 +131,15 @@ export class ProveedorController {
   async remove(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
-    await this.proveedorService.remove(id);
+    console.log('\n🏢 [PROVEEDORES] DELETE /proveedor/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      await this.proveedorService.remove(id);
+      console.log('✅ Proveedor deleted successfully:', { id });
+    } catch (error) {
+      console.log('❌ Proveedor deletion failed:', error.message);
+      throw error;
+    }
   }
 }

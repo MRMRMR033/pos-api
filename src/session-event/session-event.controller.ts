@@ -37,7 +37,17 @@ export class SessionEventController {
   @ApiBody({ type: CreateSessionEventDto })
   @ApiResponse({ status: 201, type: SessionEvent })
   async create(@Body() dto: CreateSessionEventDto): Promise<SessionEvent> {
-    return this.service.create(dto);
+    console.log('\n📝 [SESSION-EVENT] POST /session-event');
+    console.log('📥 Body:', dto);
+    
+    try {
+      const result = await this.service.create(dto);
+      console.log('✅ Session event created successfully:', { id: result.id, tipo: result.tipo });
+      return result;
+    } catch (error) {
+      console.log('❌ Session event creation failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS, PERMISSIONS.SESIONES_VER_PROPIAS)
@@ -45,7 +55,16 @@ export class SessionEventController {
   @ApiOperation({ summary: 'Obtener todos los eventos de sesión' })
   @ApiResponse({ status: 200, type: [SessionEvent] })
   async findAll(): Promise<SessionEvent[]> {
-    return this.service.findAll();
+    console.log('\n📝 [SESSION-EVENT] GET /session-event');
+    
+    try {
+      const result = await this.service.findAll();
+      console.log('✅ Session events retrieved successfully:', { count: result.length });
+      return result;
+    } catch (error) {
+      console.log('❌ Session events retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS, PERMISSIONS.SESIONES_VER_PROPIAS)
@@ -57,7 +76,17 @@ export class SessionEventController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<SessionEvent> {
-    return this.service.findOne(id);
+    console.log('\n📝 [SESSION-EVENT] GET /session-event/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = await this.service.findOne(id);
+      console.log('✅ Session event retrieved successfully:', { id: result.id, tipo: result.tipo });
+      return result;
+    } catch (error) {
+      console.log('❌ Session event retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS)
@@ -71,7 +100,18 @@ export class SessionEventController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSessionEventDto,
   ): Promise<SessionEvent> {
-    return this.service.update(id, dto);
+    console.log('\n📝 [SESSION-EVENT] PATCH /session-event/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Body:', dto);
+    
+    try {
+      const result = await this.service.update(id, dto);
+      console.log('✅ Session event updated successfully:', { id: result.id, tipo: result.tipo });
+      return result;
+    } catch (error) {
+      console.log('❌ Session event update failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.SESIONES_VER_TODAS)
@@ -84,6 +124,15 @@ export class SessionEventController {
   async remove(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
-    await this.service.remove(id);
+    console.log('\n📝 [SESSION-EVENT] DELETE /session-event/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      await this.service.remove(id);
+      console.log('✅ Session event deleted successfully:', { id });
+    } catch (error) {
+      console.log('❌ Session event deletion failed:', error.message);
+      throw error;
+    }
   }
 }

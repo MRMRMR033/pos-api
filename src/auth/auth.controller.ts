@@ -115,7 +115,18 @@ import { Public } from './public.decorator';
       }
     })
     async register(@Body() dto: RegisterDto) {
-      return this.auth.register(dto);
+      console.log('\n🔐 [AUTH] POST /auth/register');
+      console.log('📥 Request body:', { ...dto, password: '[HIDDEN]' });
+      
+      try {
+        const result = await this.auth.register(dto);
+        console.log('📤 Response:', { ...result, password: '[HIDDEN]' });
+        console.log('✅ Registration successful');
+        return result;
+      } catch (error) {
+        console.log('❌ Registration failed:', error.message);
+        throw error;
+      }
     }
   
     @Public()
@@ -155,10 +166,12 @@ import { Public } from './public.decorator';
       }
     })
     @ApiOkResponse({
-      description: 'Login exitoso - Token JWT generado',
+      description: 'Login exitoso - Tokens JWT y de refresco generados',
       type: LoginResponseDto,
       example: {
-        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW5AcG9zLXN5c3RlbS5jb20iLCJmdWxsTmFtZSI6IkFkbWluaXN0cmFkb3IgZGVsIFNpc3RlbWEiLCJpYXQiOjE3NTAwNzM1NTUsImV4cCI6MTc1MDA3NzE1NX0.wDbzMfzfnRAFGcbYHOCKSAs_JUltwLEDsw0MyhfRDSU'
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW5AcG9zLXN5c3RlbS5jb20iLCJmdWxsTmFtZSI6IkFkbWluaXN0cmFkb3IgZGVsIFNpc3RlbWEiLCJpYXQiOjE3NTAwNzM1NTUsImV4cCI6MTc1MDA3NzE1NX0.wDbzMfzfnRAFGcbYHOCKSAs_JUltwLEDsw0MyhfRDSU',
+        refresh_token: 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef01234567',
+        expires_in: 900
       }
     })
     @ApiUnauthorizedResponse({
@@ -183,9 +196,27 @@ import { Public } from './public.decorator';
         error: 'Bad Request'
       }
     })
-    async login(@Body() dto: LoginDto) {
-      console.log('Login attempt with:', dto);
-      return await this.auth.login(dto);
+    async login(@Body() dto: LoginDto, @Req() req: any) {
+      console.log('\n🔐 [AUTH] POST /auth/login');
+      console.log('📥 Request body:', { email: dto.email, password: '[HIDDEN]' });
+      
+      try {
+        // Extract device info and IP address
+        const deviceInfo = req.headers['user-agent'] || 'Unknown Device';
+        const ipAddress = req.ip || req.connection?.remoteAddress || 'Unknown IP';
+        
+        const result = await this.auth.login(dto, deviceInfo, ipAddress);
+        console.log('📤 Response:', { 
+          access_token: result.access_token ? '[TOKEN_GENERATED]' : 'null',
+          refresh_token: result.refresh_token ? '[REFRESH_TOKEN_GENERATED]' : 'null',
+          expires_in: result.expires_in
+        });
+        console.log('✅ Login successful');
+        return result;
+      } catch (error) {
+        console.log('❌ Login failed:', error.message);
+        throw error;
+      }
     }
   
     @Get('perfil')
@@ -222,7 +253,127 @@ import { Public } from './public.decorator';
       }
     })
     async profile(@Req() req: any) {
-      return req.user;
+      console.log('\n🔐 [AUTH] GET /auth/perfil');
+      console.log('📥 Authenticated user ID:', req.user?.id);
+      
+      try {
+        const result = req.user;
+        console.log('📤 Response:', { id: result.id, email: result.email, rol: result.rol });
+        console.log('✅ Profile retrieved successfully');
+        return result;
+      } catch (error) {
+        console.log('❌ Profile retrieval failed:', error.message);
+        throw error;
+      }
+    }
+
+    @Public()
+    @Post('refresh')
+    @ApiOperation({ 
+      summary: 'Renovar token de acceso usando refresh token',
+      description: `
+        Genera un nuevo access token usando un refresh token válido.
+        Los refresh tokens tienen una duración de 7 días y rotan automáticamente.
+      `
+    })
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          refresh_token: {
+            type: 'string',
+            description: 'Refresh token válido'
+          }
+        },
+        required: ['refresh_token']
+      }
+    })
+    @ApiOkResponse({
+      description: 'Token renovado exitosamente',
+      schema: {
+        type: 'object',
+        properties: {
+          access_token: { type: 'string' },
+          refresh_token: { type: 'string' },
+          expires_in: { type: 'number' }
+        }
+      }
+    })
+    async refreshToken(@Body() body: { refresh_token: string }) {
+      console.log('\n🔐 [AUTH] POST /auth/refresh');
+      console.log('📥 Request body: [REFRESH_TOKEN_PROVIDED]');
+      
+      try {
+        const result = await this.auth.refreshToken(body.refresh_token);
+        console.log('📤 Response:', { 
+          access_token: '[NEW_TOKEN_GENERATED]',
+          refresh_token: '[NEW_REFRESH_TOKEN_GENERATED]',
+          expires_in: result.expires_in
+        });
+        console.log('✅ Token refreshed successfully');
+        return result;
+      } catch (error) {
+        console.log('❌ Token refresh failed:', error.message);
+        throw error;
+      }
+    }
+
+    @Public()
+    @Post('logout')
+    @ApiOperation({ 
+      summary: 'Cerrar sesión usando refresh token',
+      description: `
+        Invalida la sesión actual usando el refresh token.
+        El token ya no podrá ser usado para renovar access tokens.
+      `
+    })
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          refresh_token: {
+            type: 'string',
+            description: 'Refresh token de la sesión a cerrar'
+          }
+        },
+        required: ['refresh_token']
+      }
+    })
+    @ApiOkResponse({ description: 'Sesión cerrada exitosamente' })
+    async logout(@Body() body: { refresh_token: string }) {
+      console.log('\n🔐 [AUTH] POST /auth/logout');
+      console.log('📥 Request body: [REFRESH_TOKEN_PROVIDED]');
+      
+      try {
+        await this.auth.logout(body.refresh_token);
+        console.log('✅ Logout successful');
+        return { message: 'Sesión cerrada exitosamente' };
+      } catch (error) {
+        console.log('❌ Logout failed:', error.message);
+        throw error;
+      }
+    }
+
+    @Post('logout-all')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ 
+      summary: 'Cerrar todas las sesiones del usuario',
+      description: 'Invalida todas las sesiones activas del usuario autenticado'
+    })
+    @ApiOkResponse({ description: 'Todas las sesiones cerradas exitosamente' })
+    async logoutAll(@Req() req: any) {
+      console.log('\n🔐 [AUTH] POST /auth/logout-all');
+      console.log('📥 User ID:', req.user?.id);
+      
+      try {
+        await this.auth.logoutAllSessions(req.user.id);
+        console.log('✅ All sessions logged out successfully');
+        return { message: 'Todas las sesiones cerradas exitosamente' };
+      } catch (error) {
+        console.log('❌ Logout all failed:', error.message);
+        throw error;
+      }
     }
 
     // =============== ENDPOINTS DE GESTIÓN DE PERMISOS ===============
@@ -285,7 +436,17 @@ import { Public } from './public.decorator';
       }
     })
     async getAllPermissions() {
-      return await this.permissionsService.getAllPermissions();
+      console.log('\n🔐 [AUTH] GET /auth/permissions/all');
+      
+      try {
+        const result = await this.permissionsService.getAllPermissions();
+        console.log('📤 Response: Found', result.length, 'permissions');
+        console.log('✅ All permissions retrieved successfully');
+        return result;
+      } catch (error) {
+        console.log('❌ Failed to get all permissions:', error.message);
+        throw error;
+      }
     }
 
     @Get('permissions/user/:id')
@@ -294,15 +455,27 @@ import { Public } from './public.decorator';
     @ApiOperation({ summary: 'Obtener permisos de un usuario específico' })
     @ApiResponse({ status: 200, description: 'Lista de permisos del usuario' })
     async getUserPermissions(@Param('id', ParseIntPipe) userId: number, @Req() req: any) {
-      // Verificar si el usuario puede ver solo sus propios permisos
-      const currentUser = req.user;
-      const canViewAll = await this.permissionsService.hasPermission(currentUser.id, PERMISSIONS.USUARIOS_VER_TODOS);
+      console.log('\n🔐 [AUTH] GET /auth/permissions/user/:id');
+      console.log('📥 Params:', { userId });
+      console.log('📥 Current user:', req.user?.id);
       
-      if (!canViewAll && currentUser.id !== userId) {
-        throw new ForbiddenException('Solo puedes ver tus propios permisos');
-      }
+      try {
+        // Verificar si el usuario puede ver solo sus propios permisos
+        const currentUser = req.user;
+        const canViewAll = await this.permissionsService.hasPermission(currentUser.id, PERMISSIONS.USUARIOS_VER_TODOS);
+        
+        if (!canViewAll && currentUser.id !== userId) {
+          throw new ForbiddenException('Solo puedes ver tus propios permisos');
+        }
 
-      return await this.permissionsService.getUserPermissions(userId);
+        const result = await this.permissionsService.getUserPermissions(userId);
+        console.log('📤 Response: Found', result.length, 'permissions for user', userId);
+        console.log('✅ User permissions retrieved successfully');
+        return result;
+      } catch (error) {
+        console.log('❌ Failed to get user permissions:', error.message);
+        throw error;
+      }
     }
 
     @Post('permissions/grant')
@@ -311,12 +484,24 @@ import { Public } from './public.decorator';
     @ApiOperation({ summary: 'Otorgar permiso a un usuario' })
     @ApiResponse({ status: 201, description: 'Permiso otorgado exitosamente' })
     async grantPermission(@Body() dto: GrantPermissionDto, @Req() req: any) {
-      const grantedById = req.user.sub;
-      return await this.permissionsService.grantPermission(
-        dto.userId, 
-        dto.permissionKey, 
-        grantedById
-      );
+      console.log('\n🔐 [AUTH] POST /auth/permissions/grant');
+      console.log('📥 Request body:', dto);
+      console.log('📥 Granted by user:', req.user?.id);
+      
+      try {
+        const grantedById = req.user.id;
+        const result = await this.permissionsService.grantPermission(
+          dto.userId, 
+          dto.permissionKey, 
+          grantedById
+        );
+        console.log('📤 Response:', result);
+        console.log('✅ Permission granted successfully');
+        return result;
+      } catch (error) {
+        console.log('❌ Failed to grant permission:', error.message);
+        throw error;
+      }
     }
 
     @Post('permissions/revoke')
@@ -325,7 +510,18 @@ import { Public } from './public.decorator';
     @ApiOperation({ summary: 'Revocar permiso a un usuario' })
     @ApiResponse({ status: 200, description: 'Permiso revocado exitosamente' })
     async revokePermission(@Body() dto: RevokePermissionDto) {
-      return await this.permissionsService.revokePermission(dto.userId, dto.permissionKey);
+      console.log('\n🔐 [AUTH] POST /auth/permissions/revoke');
+      console.log('📥 Request body:', dto);
+      
+      try {
+        const result = await this.permissionsService.revokePermission(dto.userId, dto.permissionKey);
+        console.log('📤 Response:', result);
+        console.log('✅ Permission revoked successfully');
+        return result;
+      } catch (error) {
+        console.log('❌ Failed to revoke permission:', error.message);
+        throw error;
+      }
     }
   }
   

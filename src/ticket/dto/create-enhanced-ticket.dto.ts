@@ -4,9 +4,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateTicketItemDto } from '../../ticket-item/dto/create-ticket-item.dto';
 
 export class CreateEnhancedTicketDto {
-  @ApiProperty({ description: 'ID del usuario que realiza la venta' })
+  @ApiPropertyOptional({ description: 'ID del usuario que realiza la venta (se toma automáticamente del JWT)' })
+  @IsOptional()
   @IsNumber()
-  usuarioId: number;
+  usuarioId?: number;
 
 
   @ApiPropertyOptional({ description: 'ID del turno de caja actual' })

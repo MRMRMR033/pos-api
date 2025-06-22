@@ -41,7 +41,22 @@ export class UsuarioController {
   async create(
     @Body() dto: CreateUsuarioDto,
   ): Promise<Omit<UsuarioEntity, 'password'>> {
-    return this.usuarioService.create(dto);
+    console.log('\n👤 [USUARIOS] POST /usuario');
+    console.log('📥 Body:', { 
+      email: dto.email, 
+      fullName: dto.fullName, 
+      rol: dto.rol,
+      password: dto.password ? '[HIDDEN]' : undefined 
+    });
+    
+    try {
+      const result = await this.usuarioService.create(dto);
+      console.log('✅ Usuario created successfully:', { id: result.id, email: result.email });
+      return result;
+    } catch (error) {
+      console.log('❌ Usuario creation failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.USUARIOS_VER_TODOS)
@@ -53,7 +68,16 @@ export class UsuarioController {
     type: [UsuarioEntity],
   })
   async findAll(): Promise<Omit<UsuarioEntity, 'password'>[]> {
-    return this.usuarioService.findAll();
+    console.log('\n👤 [USUARIOS] GET /usuario');
+    
+    try {
+      const result = await this.usuarioService.findAll();
+      console.log('✅ Usuarios retrieved successfully:', { count: result.length });
+      return result;
+    } catch (error) {
+      console.log('❌ Usuarios retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.USUARIOS_VER_TODOS, PERMISSIONS.USUARIOS_VER_PROPIO)
@@ -65,7 +89,17 @@ export class UsuarioController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Omit<UsuarioEntity, 'password'>> {
-    return this.usuarioService.findOne(id);
+    console.log('\n👤 [USUARIOS] GET /usuario/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = await this.usuarioService.findOne(id);
+      console.log('✅ Usuario retrieved successfully:', { id: result.id, email: result.email });
+      return result;
+    } catch (error) {
+      console.log('❌ Usuario retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.USUARIOS_EDITAR)
@@ -79,7 +113,23 @@ export class UsuarioController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUsuarioDto,
   ): Promise<Omit<UsuarioEntity, 'password'>> {
-    return this.usuarioService.update(id, dto);
+    console.log('\n👤 [USUARIOS] PATCH /usuario/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Body:', { 
+      email: dto.email, 
+      fullName: dto.fullName, 
+      rol: dto.rol,
+      password: dto.password ? '[HIDDEN]' : undefined 
+    });
+    
+    try {
+      const result = await this.usuarioService.update(id, dto);
+      console.log('✅ Usuario updated successfully:', { id: result.id, email: result.email });
+      return result;
+    } catch (error) {
+      console.log('❌ Usuario update failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.USUARIOS_ELIMINAR)
@@ -92,6 +142,15 @@ export class UsuarioController {
   async remove(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
-    await this.usuarioService.remove(id);
+    console.log('\n👤 [USUARIOS] DELETE /usuario/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      await this.usuarioService.remove(id);
+      console.log('✅ Usuario deleted successfully:', { id });
+    } catch (error) {
+      console.log('❌ Usuario deletion failed:', error.message);
+      throw error;
+    }
   }
 }

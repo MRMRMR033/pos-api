@@ -464,6 +464,264 @@ export class ReportesService {
     };
   }
 
+  async reporteVentasPorHora(desde?: string, hasta?: string, usuarioId?: number) {
+    let fechaInicio: Date;
+    let fechaFin: Date;
+
+    if (desde && hasta) {
+      fechaInicio = new Date(desde);
+      fechaFin = new Date(hasta);
+      fechaFin.setHours(23, 59, 59, 999);
+      
+      if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+        throw new BadRequestException('Formato de fecha inválido. Use YYYY-MM-DD');
+      }
+    } else {
+      const hoy = new Date();
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+    }
+
+    const where: any = {
+      createdAt: {
+        gte: fechaInicio,
+        lte: fechaFin,
+      },
+    };
+
+    if (usuarioId) {
+      where.usuarioId = usuarioId;
+    }
+
+    // Obtener todas las ventas en el rango
+    const tickets = await this.prisma.ticket.findMany({
+      where,
+      select: {
+        id: true,
+        createdAt: true,
+        total: true,
+        usuarioId: true,
+        usuario: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    // Agrupar ventas por hora
+    const ventasPorHora = new Map<string, any>();
+
+    tickets.forEach(ticket => {
+      const hora = ticket.createdAt.getHours();
+      const fecha = ticket.createdAt.toISOString().split('T')[0];
+      const key = `${fecha}-${hora.toString().padStart(2, '0')}`;
+
+      if (!ventasPorHora.has(key)) {
+        ventasPorHora.set(key, {
+          fecha,
+          hora,
+          totalVentas: 0,
+          cantidadTickets: 0,
+          usuarios: new Map(),
+        });
+      }
+
+      const grupo = ventasPorHora.get(key);
+      grupo.totalVentas += Number(ticket.total);
+      grupo.cantidadTickets += 1;
+
+      // Agrupar por usuario dentro de cada hora
+      const userId = ticket.usuarioId;
+      if (!grupo.usuarios.has(userId)) {
+        grupo.usuarios.set(userId, {
+          usuarioId: userId,
+          fullName: ticket.usuario?.fullName || 'Usuario desconocido',
+          totalVentas: 0,
+          cantidadTickets: 0,
+        });
+      }
+
+      const usuarioGrupo = grupo.usuarios.get(userId);
+      usuarioGrupo.totalVentas += Number(ticket.total);
+      usuarioGrupo.cantidadTickets += 1;
+    });
+
+    // Convertir Map a array y calcular promedios
+    const ventasHorarias = Array.from(ventasPorHora.values()).map(grupo => ({
+      fecha: grupo.fecha,
+      hora: grupo.hora,
+      totalVentas: grupo.totalVentas,
+      cantidadTickets: grupo.cantidadTickets,
+      ticketPromedio: grupo.cantidadTickets > 0 ? grupo.totalVentas / grupo.cantidadTickets : 0,
+      usuarios: Array.from(grupo.usuarios.values()),
+    }));
+
+    // Calcular resumen general
+    const resumen = {
+      totalVentas: tickets.reduce((sum, t) => sum + Number(t.total), 0),
+      totalTickets: tickets.length,
+      ticketPromedio: tickets.length > 0 ? 
+        tickets.reduce((sum, t) => sum + Number(t.total), 0) / tickets.length : 0,
+      horasConVentas: ventasHorarias.length,
+      mejorHora: ventasHorarias.length > 0 ? 
+        ventasHorarias.reduce((max, curr) => 
+          curr.totalVentas > max.totalVentas ? curr : max
+        ) : null,
+    };
+
+    return {
+      periodo: {
+        desde: fechaInicio.toISOString().split('T')[0],
+        hasta: fechaFin.toISOString().split('T')[0],
+      },
+      resumen,
+      ventasPorHora: ventasHorarias.sort((a, b) => {
+        if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+        return a.hora - b.hora;
+      }),
+    };
+  }
+
+  async reporteVentasPorVendedor(desde?: string, hasta?: string, usuarioIds?: number[]) {
+    let fechaInicio: Date;
+    let fechaFin: Date;
+
+    if (desde && hasta) {
+      fechaInicio = new Date(desde);
+      fechaFin = new Date(hasta);
+      fechaFin.setHours(23, 59, 59, 999);
+      
+      if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+        throw new BadRequestException('Formato de fecha inválido. Use YYYY-MM-DD');
+      }
+    } else {
+      const hoy = new Date();
+      fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+    }
+
+    const where: any = {
+      createdAt: {
+        gte: fechaInicio,
+        lte: fechaFin,
+      },
+    };
+
+    if (usuarioIds && usuarioIds.length > 0) {
+      where.usuarioId = {
+        in: usuarioIds,
+      };
+    }
+
+    // Obtener todos los usuarios
+    const usuarios = await this.prisma.usuario.findMany({
+      where: {
+        ...(usuarioIds && usuarioIds.length > 0 ? { id: { in: usuarioIds } } : {}),
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+      },
+    });
+
+    // Obtener ventas agrupadas por usuario
+    const ventasPorUsuario = await this.prisma.ticket.groupBy({
+      by: ['usuarioId'],
+      where,
+      _sum: {
+        total: true,
+      },
+      _count: true,
+      orderBy: {
+        _sum: {
+          total: 'desc',
+        },
+      },
+    });
+
+    // Obtener ventas detalladas para calcular rangos horarios
+    const ticketsDetallados = await this.prisma.ticket.findMany({
+      where,
+      select: {
+        id: true,
+        createdAt: true,
+        total: true,
+        usuarioId: true,
+      },
+    });
+
+    // Procesar datos por vendedor
+    const vendedores = usuarios.map(usuario => {
+      const ventasUsuario = ventasPorUsuario.find(v => v.usuarioId === usuario.id);
+      const ticketsUsuario = ticketsDetallados.filter(t => t.usuarioId === usuario.id);
+      
+      // Calcular ventas por hora para este usuario
+      const ventasPorHora = new Array(24).fill(0).map((_, hora) => {
+        const ticketsHora = ticketsUsuario.filter(t => t.createdAt.getHours() === hora);
+        return {
+          hora,
+          totalVentas: ticketsHora.reduce((sum, t) => sum + Number(t.total), 0),
+          cantidadTickets: ticketsHora.length,
+        };
+      }).filter(h => h.cantidadTickets > 0);
+
+      const totalVentas = Number(ventasUsuario?._sum.total || 0);
+      const cantidadTickets = ventasUsuario?._count || 0;
+      
+      return {
+        usuarioId: usuario.id,
+        fullName: usuario.fullName,
+        email: usuario.email,
+        totalVentas,
+        cantidadTickets,
+        ticketPromedio: cantidadTickets > 0 ? totalVentas / cantidadTickets : 0,
+        ventasPorHora: ventasPorHora.sort((a, b) => b.totalVentas - a.totalVentas),
+        primerVenta: ticketsUsuario.length > 0 ? 
+          new Date(Math.min(...ticketsUsuario.map(t => t.createdAt.getTime()))).toISOString() : null,
+        ultimaVenta: ticketsUsuario.length > 0 ? 
+          new Date(Math.max(...ticketsUsuario.map(t => t.createdAt.getTime()))).toISOString() : null,
+        mejorHora: ventasPorHora.length > 0 ? 
+          ventasPorHora.reduce((max, curr) => curr.totalVentas > max.totalVentas ? curr : max) : null,
+      };
+    });
+
+    // Filtrar solo vendedores que tuvieron ventas (opcional)
+    const vendedoresConVentas = vendedores.filter(v => v.cantidadTickets > 0);
+    const vendedoresSinVentas = vendedores.filter(v => v.cantidadTickets === 0);
+
+    // Calcular estadísticas generales
+    const resumen = {
+      totalVendedores: usuarios.length,
+      vendedoresConVentas: vendedoresConVentas.length,
+      vendedoresSinVentas: vendedoresSinVentas.length,
+      totalVentas: vendedoresConVentas.reduce((sum, v) => sum + v.totalVentas, 0),
+      totalTickets: vendedoresConVentas.reduce((sum, v) => sum + v.cantidadTickets, 0),
+      ticketPromedio: vendedoresConVentas.length > 0 ? 
+        vendedoresConVentas.reduce((sum, v) => sum + v.totalVentas, 0) / 
+        vendedoresConVentas.reduce((sum, v) => sum + v.cantidadTickets, 0) : 0,
+      mejorVendedor: vendedoresConVentas.length > 0 ? 
+        vendedoresConVentas.reduce((max, curr) => 
+          curr.totalVentas > max.totalVentas ? curr : max
+        ) : null,
+    };
+
+    return {
+      periodo: {
+        desde: fechaInicio.toISOString().split('T')[0],
+        hasta: fechaFin.toISOString().split('T')[0],
+      },
+      resumen,
+      vendedoresConVentas: vendedoresConVentas.sort((a, b) => b.totalVentas - a.totalVentas),
+      vendedoresSinVentas: vendedoresSinVentas.sort((a, b) => a.fullName.localeCompare(b.fullName)),
+    };
+  }
+
   async reporteProductosVendidos(desde?: string, hasta?: string, limit: number = 50) {
     let fechaInicio: Date;
     let fechaFin: Date;

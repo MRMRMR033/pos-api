@@ -4,7 +4,8 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
-import { Producto, Categoria, Proveedor } from '../../generated/prisma';
+import { AdjustStockDto, StockAdjustmentType } from './dto/adjust-stock.dto';
+import { Producto, Categoria, Proveedor, MovimientoTipo } from '../../generated/prisma';
 
 export type ProductoConRelaciones = Producto & {
   categoria: Categoria;
@@ -76,6 +77,70 @@ export class ProductoService {
       }
       throw new BadRequestException('No se pudo actualizar el producto');
     }
+  }
+
+  async adjustStock(id: number, dto: AdjustStockDto): Promise<ProductoConRelaciones> {
+    // Verificar que el producto existe
+    const producto = await this.findOne(id);
+    
+    let nuevoStock: number;
+    let movimientoTipo: MovimientoTipo;
+    let cantidadMovimiento: number;
+    
+    // Calcular el nuevo stock según el tipo de ajuste
+    switch (dto.tipo) {
+      case StockAdjustmentType.ENTRADA:
+        nuevoStock = producto.stock + dto.cantidad;
+        movimientoTipo = MovimientoTipo.IN;
+        cantidadMovimiento = dto.cantidad;
+        break;
+        
+      case StockAdjustmentType.SALIDA:
+        if (producto.stock < dto.cantidad) {
+          throw new BadRequestException(
+            `Stock insuficiente. Stock actual: ${producto.stock}, cantidad solicitada: ${dto.cantidad}`
+          );
+        }
+        nuevoStock = producto.stock - dto.cantidad;
+        movimientoTipo = MovimientoTipo.OUT;
+        cantidadMovimiento = dto.cantidad;
+        break;
+        
+      case StockAdjustmentType.AJUSTE:
+        if (dto.cantidad < 0) {
+          throw new BadRequestException('El stock no puede ser negativo');
+        }
+        cantidadMovimiento = Math.abs(dto.cantidad - producto.stock);
+        movimientoTipo = dto.cantidad > producto.stock ? MovimientoTipo.IN : MovimientoTipo.OUT;
+        nuevoStock = dto.cantidad;
+        break;
+        
+      default:
+        throw new BadRequestException('Tipo de ajuste inválido');
+    }
+
+    // Realizar la transacción
+    return this.prisma.$transaction(async (tx) => {
+      // Actualizar el stock del producto
+      const productoActualizado = await tx.producto.update({
+        where: { id },
+        data: { stock: nuevoStock },
+        include: { categoria: true, proveedor: true }
+      });
+
+      // Crear el registro del movimiento de stock
+      await tx.stockMovement.create({
+        data: {
+          productoId: id,
+          tipo: movimientoTipo,
+          cantidad: cantidadMovimiento,
+          motivo: dto.motivo || `Ajuste manual de inventario (${dto.tipo})`,
+          usuarioId: 1, // TODO: Obtener del contexto de autenticación
+        }
+      });
+
+      return productoActualizado;
+    });
   }
 
   async remove(id: number): Promise<void> {

@@ -53,8 +53,18 @@ import {
     @ApiBody({ type: CreateTicketItemDto })
     @ApiResponse({ status: 201, type: TicketItemEntity })
     async create(@Body() dto: CreateTicketItemDto): Promise<TicketItemEntity> {
-      const created = await this.service.create(dto);
-      return this.mapItem(created);
+      console.log('\n🛍 [TICKET-ITEM] POST /ticket-item');
+      console.log('📥 Body:', dto);
+      
+      try {
+        const created = await this.service.create(dto);
+        const result = this.mapItem(created);
+        console.log('✅ Ticket item created successfully:', { id: result.id, ticketId: result.ticketId, productoId: result.productoId });
+        return result;
+      } catch (error) {
+        console.log('❌ Ticket item creation failed:', error.message);
+        throw error;
+      }
     }
   
     @RequirePermission(PERMISSIONS.VENTAS_VER_TODAS, PERMISSIONS.VENTAS_VER_PROPIAS)
@@ -62,8 +72,17 @@ import {
     @ApiOperation({ summary: 'Listar todos los ítems de ticket' })
     @ApiResponse({ status: 200, type: [TicketItemEntity] })
     async findAll(): Promise<TicketItemEntity[]> {
-      const items = await this.service.findAll();
-      return items.map(i => this.mapItem(i));
+      console.log('\n🛍 [TICKET-ITEM] GET /ticket-item');
+      
+      try {
+        const items = await this.service.findAll();
+        const result = items.map(i => this.mapItem(i));
+        console.log('✅ Ticket items retrieved successfully:', { count: result.length });
+        return result;
+      } catch (error) {
+        console.log('❌ Ticket items retrieval failed:', error.message);
+        throw error;
+      }
     }
   
     @RequirePermission(PERMISSIONS.VENTAS_VER_TODAS, PERMISSIONS.VENTAS_VER_PROPIAS)
@@ -75,8 +94,18 @@ import {
     async findOne(
       @Param('id', ParseIntPipe) id: number,
     ): Promise<TicketItemEntity> {
-      const item = await this.service.findOne(id);
-      return this.mapItem(item);
+      console.log('\n🛍 [TICKET-ITEM] GET /ticket-item/:id');
+      console.log('📥 Params:', { id });
+      
+      try {
+        const item = await this.service.findOne(id);
+        const result = this.mapItem(item);
+        console.log('✅ Ticket item retrieved successfully:', { id: result.id, ticketId: result.ticketId });
+        return result;
+      } catch (error) {
+        console.log('❌ Ticket item retrieval failed:', error.message);
+        throw error;
+      }
     }
   
     @RequirePermission(PERMISSIONS.VENTAS_EDITAR)
@@ -90,8 +119,19 @@ import {
       @Param('id', ParseIntPipe) id: number,
       @Body() dto: UpdateTicketItemDto,
     ): Promise<TicketItemEntity> {
-      const updated = await this.service.update(id, dto);
-      return this.mapItem(updated);
+      console.log('\n🛍 [TICKET-ITEM] PATCH /ticket-item/:id');
+      console.log('📥 Params:', { id });
+      console.log('📥 Body:', dto);
+      
+      try {
+        const updated = await this.service.update(id, dto);
+        const result = this.mapItem(updated);
+        console.log('✅ Ticket item updated successfully:', { id: result.id, ticketId: result.ticketId });
+        return result;
+      } catch (error) {
+        console.log('❌ Ticket item update failed:', error.message);
+        throw error;
+      }
     }
   
     @RequirePermission(PERMISSIONS.VENTAS_ELIMINAR)
@@ -102,7 +142,16 @@ import {
     @ApiResponse({ status: 204 })
     @ApiResponse({ status: 404, description: 'No encontrado' })
     async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-      await this.service.remove(id);
+      console.log('\n🛍 [TICKET-ITEM] DELETE /ticket-item/:id');
+      console.log('📥 Params:', { id });
+      
+      try {
+        await this.service.remove(id);
+        console.log('✅ Ticket item deleted successfully:', { id });
+      } catch (error) {
+        console.log('❌ Ticket item deletion failed:', error.message);
+        throw error;
+      }
     }
   }
   

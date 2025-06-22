@@ -12,6 +12,28 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // 🌐 CONFIGURACIÓN CORS - Permitir conexiones desde Tauri
+  app.enableCors({
+    origin: [
+      'http://localhost:1420',      // Tauri dev server
+      'https://tauri.localhost',    // Tauri prod
+      'tauri://localhost',          // Tauri custom protocol
+      'http://localhost:3000',      // Dev
+      'http://localhost:5173',      // Vite dev
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Accept', 
+      'API-Version', 
+      'Accept-Version',
+      'X-Requested-With',
+      'Origin'
+    ],
+    credentials: true,
+  });
+  
   // 🚀 INICIALIZACIÓN DE LA APLICACIÓN
   const initializationService = app.get(InitializationService);
   

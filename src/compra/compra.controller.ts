@@ -37,7 +37,19 @@ export class CompraController {
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   create(@Body() createOrdenCompraDto: CreateOrdenCompraDto, @Req() req: any) {
-    return this.compraService.create(createOrdenCompraDto, req.user.id);
+    console.log('\n📦 [COMPRAS] POST /compra');
+    console.log('📥 Request body:', createOrdenCompraDto);
+    console.log('📥 User ID:', req.user?.id);
+    
+    try {
+      const result = this.compraService.create(createOrdenCompraDto, req.user.id);
+      console.log('📤 Response: Purchase order created successfully');
+      console.log('✅ Purchase order creation completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase order creation failed:', error.message);
+      throw error;
+    }
   }
 
   @Get()
@@ -52,14 +64,25 @@ export class CompraController {
     @Query('limit') limit?: string,
     @Query('estado') estado?: EstadoOrden,
   ) {
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 10;
+    console.log('\n📦 [COMPRAS] GET /compra');
+    console.log('📥 Query params:', { page, limit, estado });
     
-    if (pageNum < 1 || limitNum < 1) {
-      throw new BadRequestException('Page y limit deben ser números positivos');
+    try {
+      const pageNum = page ? parseInt(page) : 1;
+      const limitNum = limit ? parseInt(limit) : 10;
+      
+      if (pageNum < 1 || limitNum < 1) {
+        throw new BadRequestException('Page y limit deben ser números positivos');
+      }
+      
+      const result = this.compraService.findAll(pageNum, limitNum, estado);
+      console.log('📤 Response: Purchase orders list retrieved successfully');
+      console.log('✅ Purchase orders list retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase orders list retrieval failed:', error.message);
+      throw error;
     }
-    
-    return this.compraService.findAll(pageNum, limitNum, estado);
   }
 
   @Get('proveedor/:proveedorId')
@@ -73,14 +96,26 @@ export class CompraController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 10;
+    console.log('\n📦 [COMPRAS] GET /compra/proveedor/:proveedorId');
+    console.log('📥 Params:', { proveedorId });
+    console.log('📥 Query params:', { page, limit });
     
-    if (pageNum < 1 || limitNum < 1) {
-      throw new BadRequestException('Page y limit deben ser números positivos');
+    try {
+      const pageNum = page ? parseInt(page) : 1;
+      const limitNum = limit ? parseInt(limit) : 10;
+      
+      if (pageNum < 1 || limitNum < 1) {
+        throw new BadRequestException('Page y limit deben ser números positivos');
+      }
+      
+      const result = this.compraService.findByProveedor(proveedorId, pageNum, limitNum);
+      console.log('📤 Response: Purchase orders by supplier retrieved successfully');
+      console.log('✅ Purchase orders by supplier retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase orders by supplier retrieval failed:', error.message);
+      throw error;
     }
-    
-    return this.compraService.findByProveedor(proveedorId, pageNum, limitNum);
   }
 
   @Get(':id')
@@ -89,7 +124,18 @@ export class CompraController {
   @ApiResponse({ status: 200, description: 'Orden de compra encontrada' })
   @ApiResponse({ status: 404, description: 'Orden de compra no encontrada' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.compraService.findOne(id);
+    console.log('\n📦 [COMPRAS] GET /compra/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.compraService.findOne(id);
+      console.log('📤 Response: Purchase order retrieved successfully');
+      console.log('✅ Purchase order retrieval completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase order retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @Patch(':id')
@@ -102,7 +148,19 @@ export class CompraController {
     @Param('id', ParseIntPipe) id: number, 
     @Body() updateOrdenCompraDto: UpdateOrdenCompraDto
   ) {
-    return this.compraService.update(id, updateOrdenCompraDto);
+    console.log('\n📦 [COMPRAS] PATCH /compra/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', updateOrdenCompraDto);
+    
+    try {
+      const result = this.compraService.update(id, updateOrdenCompraDto);
+      console.log('📤 Response: Purchase order updated successfully');
+      console.log('✅ Purchase order update completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase order update failed:', error.message);
+      throw error;
+    }
   }
 
   @Delete(':id')
@@ -112,7 +170,18 @@ export class CompraController {
   @ApiResponse({ status: 400, description: 'Orden no eliminable' })
   @ApiResponse({ status: 404, description: 'Orden de compra no encontrada' })
   remove(@Param('id', ParseIntPipe) id: number) {
-    return this.compraService.remove(id);
+    console.log('\n📦 [COMPRAS] DELETE /compra/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.compraService.remove(id);
+      console.log('📤 Response: Purchase order deleted successfully');
+      console.log('✅ Purchase order deletion completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase order deletion failed:', error.message);
+      throw error;
+    }
   }
 
   @Post(':id/recibir')
@@ -126,6 +195,19 @@ export class CompraController {
     @Body() recibirCompraDto: RecibirCompraDto,
     @Req() req: any,
   ) {
-    return this.compraService.recibir(id, recibirCompraDto, req.user.id);
+    console.log('\n📦 [COMPRAS] POST /compra/:id/recibir');
+    console.log('📥 Params:', { id });
+    console.log('📥 Request body:', recibirCompraDto);
+    console.log('📥 User ID:', req.user?.id);
+    
+    try {
+      const result = this.compraService.recibir(id, recibirCompraDto, req.user.id);
+      console.log('📤 Response: Purchase order received successfully');
+      console.log('✅ Purchase order reception completed');
+      return result;
+    } catch (error) {
+      console.log('❌ Purchase order reception failed:', error.message);
+      throw error;
+    }
   }
 }

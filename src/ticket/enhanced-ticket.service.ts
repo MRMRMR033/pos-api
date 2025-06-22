@@ -179,7 +179,35 @@ export class EnhancedTicketService {
         });
       }
 
-      return this.findOneWithDetails(ticket.id);
+      // Buscar el ticket completo dentro de la misma transacción
+      return await tx.ticket.findUnique({
+        where: { id: ticket.id },
+        include: {
+          items: {
+            include: {
+              producto: {
+                include: {
+                  categoria: true,
+                  impuesto: true,
+                },
+              },
+            },
+          },
+          usuario: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
+          turnoCaja: {
+            select: {
+              id: true,
+              cajaId: true,
+              fechaApertura: true,
+            },
+          },
+        },
+      });
     });
   }
 

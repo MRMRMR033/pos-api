@@ -54,7 +54,17 @@ export class CashMovementController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para registrar movimientos', type: ErrorResponseDto })
   create(@Body() createCashMovementDto: CreateCashMovementDto) {
-    return this.cashMovementService.create(createCashMovementDto);
+    console.log('\n💵 [CASH-MOVEMENT] POST /cash-movement');
+    console.log('📥 Body:', createCashMovementDto);
+    
+    try {
+      const result = this.cashMovementService.create(createCashMovementDto);
+      console.log('✅ Cash movement created successfully:', { tipo: createCashMovementDto.tipo, monto: createCashMovementDto.monto });
+      return result;
+    } catch (error) {
+      console.log('❌ Cash movement creation failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CAJA_VER_MOVIMIENTOS_TODOS, PERMISSIONS.CAJA_VER_MOVIMIENTOS)
@@ -68,7 +78,16 @@ export class CashMovementController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para ver movimientos', type: ErrorResponseDto })
   findAll() {
-    return this.cashMovementService.findAll();
+    console.log('\n💵 [CASH-MOVEMENT] GET /cash-movement');
+    
+    try {
+      const result = this.cashMovementService.findAll();
+      console.log('✅ Cash movements retrieved successfully');
+      return result;
+    } catch (error) {
+      console.log('❌ Cash movements retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CAJA_VER_MOVIMIENTOS_TODOS, PERMISSIONS.CAJA_VER_MOVIMIENTOS)
@@ -81,7 +100,17 @@ export class CashMovementController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para ver movimientos', type: ErrorResponseDto })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.cashMovementService.findOne(id);
+    console.log('\n💵 [CASH-MOVEMENT] GET /cash-movement/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.cashMovementService.findOne(id);
+      console.log('✅ Cash movement retrieved successfully:', { id });
+      return result;
+    } catch (error) {
+      console.log('❌ Cash movement retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CAJA_VER_MOVIMIENTOS_TODOS)
@@ -98,7 +127,18 @@ export class CashMovementController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para editar movimientos', type: ErrorResponseDto })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateCashMovementDto: UpdateCashMovementDto) {
-    return this.cashMovementService.update(id, updateCashMovementDto);
+    console.log('\n💵 [CASH-MOVEMENT] PATCH /cash-movement/:id');
+    console.log('📥 Params:', { id });
+    console.log('📥 Body:', updateCashMovementDto);
+    
+    try {
+      const result = this.cashMovementService.update(id, updateCashMovementDto);
+      console.log('✅ Cash movement updated successfully:', { id });
+      return result;
+    } catch (error) {
+      console.log('❌ Cash movement update failed:', error.message);
+      throw error;
+    }
   }
 
   @RequirePermission(PERMISSIONS.CAJA_VER_MOVIMIENTOS_TODOS)
@@ -115,6 +155,16 @@ export class CashMovementController {
   @ApiUnauthorizedResponse({ description: 'Token JWT requerido', type: ErrorResponseDto })
   @ApiForbiddenResponse({ description: 'Sin permisos para eliminar movimientos', type: ErrorResponseDto })
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.cashMovementService.remove(id);
+    console.log('\n💵 [CASH-MOVEMENT] DELETE /cash-movement/:id');
+    console.log('📥 Params:', { id });
+    
+    try {
+      const result = this.cashMovementService.remove(id);
+      console.log('✅ Cash movement deleted successfully:', { id });
+      return result;
+    } catch (error) {
+      console.log('❌ Cash movement deletion failed:', error.message);
+      throw error;
+    }
   }
 }
